@@ -1,4 +1,5 @@
-/* Sayı Bahçesi — 6 yaş için toplama, çıkarma, sayı dizisi ve boşluk doldurma.
+/* Sayı Bahçesi — 6 yaş için toplama, çıkarma, sayı dizisi, boşluk doldurma ve şekil oyunları
+   (örüntü, ayna/simetri, farklı olan, şekil sudoku).
    Pedagoji: somut → resimli → soyut (Kolay'da nesneler hep görünür, Orta'da ipucuyla,
    Zor'da 10'luk çerçeve), süre baskısı yok, yanlışta ceza yok, yanlış sorular aralıklı tekrar. */
 'use strict';
@@ -17,13 +18,19 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
+const VERSION = 3;          // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v3)
 const MODES = [
-  { key: 'add', label: 'Toplama', ico: '2+3', c: '#34C17B' },
-  { key: 'sub', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
-  { key: 'seq', label: 'Sayı Dizisi', ico: '1 2 ?', c: '#8E7CF0' },
-  { key: 'blank', label: 'Boşluk Doldur', ico: '3+?=5', c: '#3FA9F5' },
-  { key: 'mix', label: 'Karışık', ico: '🎲', c: '#FF6FA8' },
+  { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
+  { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
+  { key: 'seq', g: 'num', label: 'Sayı Dizisi', ico: '1 2 ?', c: '#8E7CF0' },
+  { key: 'blank', g: 'num', label: 'Boşluk Doldur', ico: '3+?=5', c: '#3FA9F5' },
+  { key: 'mix', g: 'num', label: 'Karışık', ico: '🎲', c: '#FF6FA8' },
+  { key: 'pat', g: 'shape', label: 'Örüntü', ico: '🔺🔵🔺', c: '#14B8A6' },
+  { key: 'sym', g: 'shape', label: 'Ayna', ico: '🦋', c: '#E05FC4' },
+  { key: 'odd', g: 'shape', label: 'Farklı Olan', ico: '🔍', c: '#F08C1A' },
+  { key: 'sud', g: 'shape', label: 'Şekil Sudoku', ico: '🧩', c: '#5B7FEF' },
 ];
+const GROUPS = [['num', 'Sayılar'], ['shape', 'Şekiller']];
 const EMOJI = ['🍎', '🐟', '⭐', '🍓', '🐞', '🎈', '🧁', '🐥', '🌸', '🍪', '🦋', '🚗'];
 const PRAISE = [['Aferin!', 'aferin'], ['Harika!', 'harika'], ['Süpersin!', 'supersin'], ['Çok güzel!', 'cok_guzel'], ['Bravo!', 'bravo']];
 
@@ -77,6 +84,7 @@ const GEN = {
 // say: okunacak ses parçalarının listesi (audio/<ad>.mp3). Sayılar 'n5' gibi; 0 = kısa duraklama.
 const N = n => 'n' + n;
 function build(s) {
+  if (SB[s.t]) return SB[s.t](s);
   if (s.t === 'add') return { ans: s.a + s.b, tokens: [s.a, '+', s.b, '=', null], say: [N(s.a), 'arti', N(s.b), 'kac_eder'] };
   if (s.t === 'sub') return { ans: s.a - s.b, tokens: [s.a, '−', s.b, '=', null], say: [N(s.a), 'eksi', N(s.b), 'kac_eder'] };
   if (s.t === 'blank') {
@@ -115,6 +123,186 @@ function segs(s, q) {
   if (s.op === '+') return s.hole === 'b' ? [['a', s.a], ['q', s.b]] : [['q', s.a], ['b', s.b]];
   return [['a', q.c], ['x', s.b]];
 }
+
+/* ================= Şekil oyunları =================
+   Örüntü: tekrar eden kuralı bulma. Ayna: simetri (çeldirici "aynen kopyala", yani çocukların en sık hatası).
+   Farklı Olan: önemsiz farkları görmezden gelip kuralı bulma. Şekil Sudoku: satır ve sütunu birlikte düşünme.
+   Bir şekil öğesi: [şekil, renk, küçük mü]. */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const COLORS = { red: '#FF6B6B', blue: '#3FA9F5', yellow: '#FFC93C', green: '#34C17B', purple: '#8E7CF0', orange: '#FF9F43' };
+const COLOR_TR = { red: 'kırmızı', blue: 'mavi', yellow: 'sarı', green: 'yeşil', purple: 'mor', orange: 'turuncu' };
+const SHAPE_TR = { circle: 'daire', square: 'kare', triangle: 'üçgen', star: 'yıldız', heart: 'kalp', diamond: 'baklava' };
+const STAR = (() => {
+  const p = [];
+  for (let i = 0; i < 10; i++) { const r = i % 2 ? 19 : 44, a = -Math.PI / 2 + i * Math.PI / 5; p.push(`${(50 + r * Math.cos(a)).toFixed(1)} ${(54 + r * Math.sin(a)).toFixed(1)}`); }
+  return 'M' + p.join(' L') + ' Z';
+})();
+const SHAPE_SVG = {
+  circle: '<circle cx="50" cy="50" r="40"/>',
+  square: '<rect x="12" y="12" width="76" height="76" rx="10"/>',
+  triangle: '<path d="M50 12 L90 84 H10 Z"/>',
+  star: `<path d="${STAR}"/>`,
+  heart: '<path d="M50 86 C22 66 8 52 8 34 C8 20 19 10 32 10 C41 10 47 15 50 22 C53 15 59 10 68 10 C81 10 92 20 92 34 C92 52 78 66 50 86 Z"/>',
+  diamond: '<path d="M50 8 L88 50 L50 92 L12 50 Z"/>',
+};
+const SHAPES = Object.keys(SHAPE_SVG), COLS = Object.keys(COLORS);
+const SUD = [['circle', 'red'], ['square', 'blue'], ['triangle', 'yellow'], ['star', 'green']];
+const sample = (a, n) => shuffle([...a]).slice(0, n);
+const itemKey = ([sh, co, sm]) => `${sh}-${co}${sm ? '-s' : ''}`;
+const itemName = ([sh, co, sm]) => `${sm ? 'küçük ' : ''}${COLOR_TR[co]} ${SHAPE_TR[sh]}`;
+
+function shapeEl([sh, co, sm]) {
+  const s = document.createElementNS(SVGNS, 'svg');
+  s.setAttribute('viewBox', '0 0 100 100'); s.setAttribute('class', 'shp'); s.setAttribute('aria-hidden', 'true');
+  const k = sm ? ' transform="translate(50 50) scale(.55) translate(-50 -50)"' : '';
+  s.innerHTML = `<g fill="${COLORS[co]}" stroke="${COLORS[co]}" stroke-width="8" stroke-linejoin="round"${k}>${SHAPE_SVG[sh]}</g>`;
+  return s;
+}
+
+Object.assign(GEN, {
+  pat(lv) {
+    const unit = pick(lv === 1 ? ['AB', 'AB', 'AAB', 'ABB'] : lv === 2 ? ['ABC', 'AABB', 'AAB', 'ABB'] : ['ABC', 'ABCD', 'AABC', 'ABAC']);
+    const k = new Set(unit).size;
+    let items;
+    if (lv < 3) { const sh = sample(SHAPES, k), co = sample(COLS, k); items = sh.map((s, i) => [s, co[i]]); }
+    else {
+      // Zor: parçalar şekli ya da rengi paylaşır; çocuk iki özelliğe birden bakmak zorunda
+      const sh = sample(SHAPES, 2), co = sample(COLS, 2);
+      items = shuffle([[sh[0], co[0]], [sh[0], co[1]], [sh[1], co[0]], [sh[1], co[1]]]).slice(0, k);
+    }
+    const total = Math.max(7, unit.length * 2 + 1);
+    return { t: 'pat', unit, items, total, hole: lv === 1 ? total - 1 : rnd(unit.length, total - 1), n: LEVELS[lv].options };
+  },
+  sym(lv) {
+    const R = lv === 1 ? 3 : 4, C = lv === 3 ? 3 : 2, colors = lv === 3 ? 2 : 1;
+    for (;;) {
+      const rows = Array.from({ length: R }, () => Array.from({ length: C }, () => Math.random() < .5 ? 1 + rnd(0, colors - 1) : 0).join(''));
+      const filled = rows.join('').replace(/0/g, '').length;
+      if (filled < 2 || filled > R * C - 1) continue;
+      const s = { t: 'sym', rows, off: [rnd(0, R - 1), rnd(0, C - 1)], n: LEVELS[lv].options };
+      const c = symCands(s), vals = Object.values(c).map(r => r.join('/'));
+      if (new Set(vals).size === vals.length) return s;
+    }
+  },
+  odd(lv) {
+    const rule = pick(lv === 3 ? ['shape', 'color', 'size'] : ['shape', 'color']);
+    const val = { shape: sample(SHAPES, 2), color: sample(COLS, 2), size: [0, 1] };
+    const items = [0, 1, 2, 3].map(() => ({ shape: val.shape[0], color: val.color[0], size: 0 }));
+    const odd = rnd(0, 3);
+    items[odd][rule] = val[rule][1];
+    // Önemsiz özellikler 2+2 dağılır; böylece hiçbiri tek başına bir öğeyi öne çıkarmaz, kural tek kalır.
+    const vary = lv === 1 ? [] : ['shape', 'color', 'size'].filter(a => a !== rule && (a !== 'size' || lv === 3));
+    for (const a of vary) { const v = shuffle([val[a][0], val[a][0], val[a][1], val[a][1]]); items.forEach((it, i) => { it[a] = v[i]; }); }
+    return { t: 'odd', rule, odd, items: items.map(it => [it.shape, it.color, it.size]) };
+  },
+  sud(lv) {
+    const n = lv === 1 ? 3 : 4, ix = [...Array(n).keys()];
+    const rp = shuffle([...ix]), cp = shuffle([...ix]), sp = shuffle([...ix]);
+    const g = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) g.push(sp[(rp[r] + cp[c]) % n]);
+    const at = (r, c) => g[r * n + c];
+    const r = rnd(0, n - 1), c = rnd(0, n - 1), blanks = [r * n + c];
+    if (lv === 2) { let k; do k = rnd(0, n * n - 1); while (Math.floor(k / n) === r); blanks.push(k); }
+    if (lv === 3) {
+      // Satırda 2 boş, sütunda 2 boş: cevap ancak ikisine birlikte bakınca tek kalır.
+      let c2; do c2 = rnd(0, n - 1); while (c2 === c);
+      const w = at(r, c2), r2 = pick(ix.filter(x => x !== r && at(x, c) !== w));
+      blanks.push(r * n + c2, r2 * n + c);
+    }
+    return { t: 'sud', n, g: g.join(''), blanks, target: r * n + c };
+  },
+});
+
+// Ayna seçenekleri: m = doğru ayna, c = aynen kopya, f = ters dönmüş ayna, o = bir karesi yanlış ayna
+function symCands(s) {
+  const m = s.rows.map(r => [...r].reverse().join(''));
+  const o = m.map((r, i) => i !== s.off[0] ? r : [...r].map((v, j) => j !== s.off[1] ? v : v === '0' ? '1' : '0').join(''));
+  return s.n === 3 ? { m, c: s.rows, o } : { m, c: s.rows, f: [...m].reverse(), o };
+}
+function symHalf(rows, cls, ghost = -1) {
+  const g = el('div', 'half ' + cls); g.style.setProperty('--cols', rows[0].length);
+  rows.forEach((r, i) => { for (const v of r) g.append(el('span', `sq c${v}${i === ghost ? ' ghost' : ''}`)); });
+  return g;
+}
+
+// Şekil sorularının ortak biçimi: ans (metin anahtar), opts [[değer, çizici, ad]], draw(), fill(), say/hintSay, prompt/hintText
+const SB = {
+  pat(s) {
+    const L = s.unit.length;
+    const seq = Array.from({ length: s.total }, (_, i) => s.items[s.unit.charCodeAt(i % L) - 65]);
+    const ans = seq[s.hole], key = itemKey(ans);
+    // Çeldiriciler: desendeki öteki parçalar, sonra "aynı şekil başka renk" ve "aynı renk başka şekil"
+    const near = [...COLS.filter(c => c !== ans[1]).map(c => [ans[0], c]), ...SHAPES.filter(x => x !== ans[0]).map(x => [x, ans[1]])];
+    const seen = new Set([key]), opts = [ans];
+    for (const it of [...shuffle([...s.items]), ...shuffle(near)]) if (opts.length < s.n && !seen.has(itemKey(it))) { seen.add(itemKey(it)); opts.push(it); }
+    const q = {
+      shape: true, ans: key, say: ['bosluga'], hintSay: ['tekrar'],
+      prompt: 'Boşluğa hangisi gelir?', hintText: 'Tekrar eden parçaya bak',
+      opts: opts.map(it => [itemKey(it), () => shapeEl(it), itemName(it)]),
+      draw(qe) {
+        const row = el('div', 'pat'); let unit;
+        seq.forEach((it, i) => {
+          if (i % L === 0) { unit = el('div', 'unit'); row.append(unit); }
+          const t = el('div', 'tile');
+          if (i === s.hole) { t.classList.add('slot'); t.textContent = '?'; q.slot = t; } else t.append(shapeEl(it));
+          unit.append(t);
+        });
+        qe.append(row);
+      },
+      fill() { q.slot.textContent = ''; q.slot.append(shapeEl(ans)); q.slot.classList.add('filled'); },
+    };
+    return q;
+  },
+  sym(s) {
+    const c = symCands(s);
+    // İpucu: aynanın sağına, ilk simetrik olmayan satırın yansıması soluk çizilir
+    const ghost = Math.max(0, s.rows.findIndex(r => r !== [...r].reverse().join('')));
+    const q = {
+      shape: true, ans: 'm', say: ['ayna'], hintSay: ['ayna_cizgi'],
+      prompt: 'Aynadaki hâli hangisi?', hintText: 'Ortadaki çizgi bir ayna',
+      opts: Object.keys(c).map(k => [k, () => symHalf(c[k], 'mini'), 'Ayna seçeneği']),
+      draw(qe) {
+        const box = el('div', 'sym');
+        q.right = symHalf(c.m, 'unknown', ghost);
+        box.append(symHalf(s.rows, 'known'), el('div', 'mirror'), q.right);
+        qe.append(box);
+      },
+      fill() { q.right.classList.add('filled'); },
+    };
+    return q;
+  },
+  odd(s) {
+    const tip = { shape: ['sekline_bak', 'Şekline bak'], color: ['rengine_bak', 'Rengine bak'], size: ['boyuna_bak', 'Büyüklüğüne bak'] }[s.rule];
+    return {
+      // Seçenekler bulmacanın kendisi: alttaki şeritte değil, sahnede büyük kartlar olarak durur.
+      shape: true, inStage: true, ans: 'k' + s.odd, say: ['farkli'], hintSay: [tip[0]],
+      prompt: 'Hangisi farklı?', hintText: tip[1],
+      opts: s.items.map((it, i) => ['k' + i, () => shapeEl(it), itemName(it)]),
+      draw() {},
+      fill() {},
+    };
+  },
+  sud(s) {
+    const n = s.n, g = [...s.g].map(Number), tr = Math.floor(s.target / n), tc = s.target % n;
+    const q = {
+      shape: true, ans: String(g[s.target]), say: ['bosluga'], hintSay: ['yan_alt'],
+      prompt: 'Boşluğa hangisi gelir?', hintText: 'Yan yana ve alt alta bak',
+      opts: SUD.slice(0, n).map((it, i) => [String(i), () => shapeEl(it), itemName(it)]),
+      draw(qe) {
+        const box = el('div', 'sud'); box.style.setProperty('--n', n);
+        g.forEach((v, i) => {
+          const r = Math.floor(i / n), c = i % n, cell = el('div', 'sc' + (r === tr || c === tc ? ' line' : ''));
+          if (i === s.target) { cell.classList.add('target'); cell.textContent = '?'; q.slot = cell; }
+          else if (s.blanks.includes(i)) cell.classList.add('blank');
+          else cell.append(shapeEl(SUD[v]));
+          box.append(cell);
+        });
+        qe.append(box);
+      },
+      fill() { q.slot.textContent = ''; q.slot.append(shapeEl(SUD[g[s.target]])); q.slot.classList.add('filled'); },
+    };
+    return q;
+  },
+};
 
 /* ================= Ses ve konuşma ================= */
 const Sound = {
@@ -202,14 +390,19 @@ function renderHome() {
     b.classList.toggle('on', on); b.setAttribute('aria-checked', on);
   }
   const box = $('modes'); box.innerHTML = '';
-  for (const m of MODES) {
-    const b = el('button', 'mode'); b.style.setProperty('--c', m.c);
-    b.append(el('span', 'ico', m.ico), el('span', 'lbl', m.label));
-    const best = Store.d.best[`${m.key}-${lv()}`] || 0, st = el('span', 'best');
-    for (let i = 0; i < 3; i++) st.append(el('span', i < best ? 'on' : '', '★'));
-    b.append(st);
-    b.onclick = () => { Sound.play('tap'); startRound(m.key); };
-    box.append(b);
+  for (const [g, title] of GROUPS) {
+    const sec = el('section', 'mode-group'), grid = el('div', 'mode-grid');
+    sec.append(el('h2', 'group-title', title), grid);
+    for (const m of MODES.filter(x => x.g === g)) {
+      const b = el('button', 'mode'); b.style.setProperty('--c', m.c);
+      b.append(el('span', 'ico', m.ico), el('span', 'lbl', m.label));
+      const best = Store.d.best[`${m.key}-${lv()}`] || 0, st = el('span', 'best');
+      for (let i = 0; i < 3; i++) st.append(el('span', i < best ? 'on' : '', '★'));
+      b.append(st);
+      b.onclick = () => { Sound.play('tap'); startRound(m.key); };
+      grid.append(b);
+    }
+    box.append(sec);
   }
 }
 
@@ -254,31 +447,51 @@ function render() {
   const pr = $('progress'); pr.innerHTML = '';
   for (let i = 0; i < ROUND; i++) pr.append(el('i', round.results[i] || (i === round.i ? 'cur' : '')));
 
-  const qe = $('question'); qe.innerHTML = '';
-  qe.className = 'question' + (cur.q.seq && cur.hint ? ' show-steps' : '');
-  cur.q.tokens.forEach((t, i) => {
-    if (cur.q.seq && i > 0) qe.append(el('span', 'step', (cur.spec.step > 0 ? '+' : '−') + Math.abs(cur.spec.step)));
-    if (t === null) { cur.holeEl = el('span', 'hole', '?'); qe.append(cur.holeEl); }
-    else if (typeof t === 'number') qe.append(el('span', cur.q.seq ? 'box' : 'num', t));
-    else qe.append(el('span', 'op', t));
-  });
+  const q = cur.q, qe = $('question'); qe.innerHTML = '';
+  if (q.shape) {
+    qe.className = `question shapes ${cur.spec.t}`;
+    q.draw(qe);
+  } else {
+    qe.className = 'question';
+    q.tokens.forEach((t, i) => {
+      if (q.seq && i > 0) qe.append(el('span', 'step', (cur.spec.step > 0 ? '+' : '−') + Math.abs(cur.spec.step)));
+      if (t === null) { cur.holeEl = el('span', 'hole', '?'); qe.append(cur.holeEl); }
+      else if (typeof t === 'number') qe.append(el('span', q.seq ? 'box' : 'num', t));
+      else qe.append(el('span', 'op', t));
+    });
+  }
 
   renderVisual();
 
-  const ans = $('answers'); ans.innerHTML = '';
-  for (const v of options(cur.spec, cur.q, LEVELS[lv()].options)) {
-    const b = el('button', 'answer', v);
-    b.dataset.v = v; b.setAttribute('aria-label', String(v));
+  $('answers').innerHTML = '';
+  $('answers').className = 'answers' + (q.inStage ? ' hidden' : '');
+  const ans = q.inStage ? el('div', 'stage-answers') : $('answers');
+  if (q.inStage) qe.append(ans);
+  // Sayı sorularında seçenekler metin; şekil sorularında her seçeneğin kendi çizimi var.
+  const opts = q.opts ? shuffle([...q.opts]) : options(cur.spec, q, LEVELS[lv()].options).map(v => [v, null, String(v)]);
+  for (const [v, draw, name] of opts) {
+    const b = el('button', 'answer', draw ? undefined : v);
+    if (draw) b.append(draw());
+    b.dataset.v = String(v); b.setAttribute('aria-label', name);
     b.onclick = () => choose(b, v);
     ans.append(b);
   }
 }
 
+function renderPrompt() {
+  const p = $('prompt'), q = cur.q; p.innerHTML = '';
+  if (!q.prompt) return;
+  p.append(el('span', '', q.prompt));
+  if (cur.hint && q.hintText) p.append(el('span', 'hint-chip', '💡 ' + q.hintText));
+}
+
 function renderVisual() {
   const v = $('visual'); v.innerHTML = '';
   const seq = cur.q.seq;
-  v.classList.toggle('hidden', !cur.hint || seq);
   $('hintBtn').disabled = cur.hint;
+  renderPrompt();
+  if (cur.q.shape) { v.classList.add('hidden'); $('question').classList.toggle('show-hint', cur.hint); return; }
+  v.classList.toggle('hidden', !cur.hint || seq);
   if (seq) { $('question').classList.toggle('show-steps', cur.hint); return; }
   const sg = segs(cur.spec, cur.q);
   if (LEVELS[lv()].visual === 'frames') {
@@ -311,17 +524,18 @@ function showHint() {
 }
 
 function fillHole() {
+  if (cur.q.fill) return cur.q.fill();
   cur.holeEl.textContent = cur.q.ans;
   cur.holeEl.classList.add('filled');
 }
 
 function choose(btn, v) {
   if (busy || btn.disabled) return;
-  if (v === cur.q.ans) {
+  if (String(v) === String(cur.q.ans)) {
     busy = true;
     const first = cur.tries === 0;
     btn.classList.add('right'); fillHole();
-    for (const b of $('answers').children) b.disabled = true;
+    for (const b of document.querySelectorAll('#play .answer')) b.disabled = true;
     if (first) round.score++;
     if (first && cur.repeat) relieve(cur);
     round.results[round.i] = first ? 'ok' : 'miss';
@@ -341,7 +555,7 @@ function choose(btn, v) {
     showHint();
   } else {
     // İkinci yanlışta doğru cevabı göster; çocuk kendisi dokunsun.
-    for (const b of $('answers').children) if (+b.dataset.v === cur.q.ans) b.classList.add('reveal'); else b.disabled = true;
+    for (const b of document.querySelectorAll('#play .answer')) if (b.dataset.v === String(cur.q.ans)) b.classList.add('reveal'); else b.disabled = true;
   }
 }
 
@@ -400,7 +614,9 @@ const goHome = () => { clearTimeout(nextTimer); Voice.stop(); show('home'); rend
 $('homeBtn').onclick = goHome;
 $('endHomeBtn').onclick = goHome;
 $('againBtn').onclick = () => startRound(mode);
-$('speakBtn').onclick = () => cur && Voice.say(cur.q.say);
+// 🔈: soruyu okur; şekil sorularında ipucu açıksa ipucunu da ekler.
+$('speakBtn').onclick = () => cur && Voice.say(cur.hint && cur.q.hintSay ? [...cur.q.say, 0, 0, ...cur.q.hintSay] : cur.q.say);
+$('ver').textContent = 'v' + VERSION;
 $('hintBtn').onclick = () => { if (cur) { Sound.play('tap'); showHint(); } };
 ['touchend', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, () => Sound.unlock(), { passive: true }));
 document.addEventListener('gesturestart', e => e.preventDefault());

@@ -16,6 +16,10 @@ CLIPS=(
   "arti|artı" "eksi|eksi" "kac|kaç" "kac_eder|kaç eder?" "eder|eder." "bos|boş"
   "aferin|Aferin!" "harika|Harika!" "supersin|Süpersin!" "cok_guzel|Çok güzel!" "bravo|Bravo!"
   "mukemmel|Mükemmel!" "cok_iyi|Çok iyi!" "guzel_calistin|Güzel çalıştın!"
+  # şekil oyunları: soru ve ipucu
+  "bosluga|Boşluğa hangisi gelir?" "ayna|Aynadaki hâli hangisi?" "farkli|Hangisi farklı?"
+  "tekrar|Tekrar eden parçaya bak." "ayna_cizgi|Ortadaki çizgi bir ayna." "yan_alt|Yan yana ve alt alta bak."
+  "sekline_bak|Şekline bak." "rengine_bak|Rengine bak." "boyuna_bak|Büyüklüğüne bak."
 )
 for n in $(seq 0 100); do CLIPS+=("n$n|$n"); done
 
