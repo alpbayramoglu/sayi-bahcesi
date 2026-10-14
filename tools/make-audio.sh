@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Oyundaki ses parçalarını macOS'taki Yelda sesiyle üretir.
+# Çıktı: audio/<ad>.mp3 ve service worker'ın önbelleğe alacağı audio/clips.js listesi.
+# Kullanım: ./tools/make-audio.sh   (macOS, `say` ve `ffmpeg` gerekir)
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+VOICE="Yelda"
+RATE=165   # dakikada kelime; varsayılandan biraz yavaş, çocuk için
+OUT="audio"
+mkdir -p "$OUT"
+rm -f "$OUT"/*.mp3
+
+# ad|okunacak metin
+CLIPS=(
+  "arti|artı" "eksi|eksi" "kac|kaç" "kac_eder|kaç eder?" "eder|eder." "bos|boş"
+  "aferin|Aferin!" "harika|Harika!" "supersin|Süpersin!" "cok_guzel|Çok güzel!" "bravo|Bravo!"
+  "mukemmel|Mükemmel!" "cok_iyi|Çok iyi!" "guzel_calistin|Güzel çalıştın!"
+)
+for n in $(seq 0 100); do CLIPS+=("n$n|$n"); done
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+# Baştaki ve sondaki sessizliği kırp ki parçalar art arda doğal aksın.
+TRIM="silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse"
+
+names=()
+for c in "${CLIPS[@]}"; do
+  name="${c%%|*}"; text="${c#*|}"
+  say -v "$VOICE" -r "$RATE" -o "$tmp/$name.aiff" "$text"
+  ffmpeg -loglevel error -y -i "$tmp/$name.aiff" -af "$TRIM" -ac 1 -ar 22050 -codec:a libmp3lame -b:a 48k "$OUT/$name.mp3"
+  names+=("\"$name\"")
+done
+
+printf '// tools/make-audio.sh tarafından üretilir, elle düzenleme.\nself.CLIPS = [%s];\n' "$(IFS=,; echo "${names[*]}")" > "$OUT/clips.js"
+echo "${#names[@]} parça üretildi → $OUT/"

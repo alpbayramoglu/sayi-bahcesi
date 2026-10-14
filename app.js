@@ -25,7 +25,7 @@ const MODES = [
   { key: 'mix', label: 'Karışık', ico: '🎲', c: '#FF6FA8' },
 ];
 const EMOJI = ['🍎', '🐟', '⭐', '🍓', '🐞', '🎈', '🧁', '🐥', '🌸', '🍪', '🦋', '🚗'];
-const PRAISE = ['Aferin!', 'Harika!', 'Süpersin!', 'Çok güzel!', 'Bravo!'];
+const PRAISE = [['Aferin!', 'aferin'], ['Harika!', 'harika'], ['Süpersin!', 'supersin'], ['Çok güzel!', 'cok_guzel'], ['Bravo!', 'bravo']];
 
 /* ================= Kayıt ================= */
 const Store = {
@@ -74,21 +74,23 @@ const GEN = {
   mix(lv) { return GEN[pick(['add', 'sub', 'seq', 'blank'])](lv); },
 };
 
+// say: okunacak ses parçalarının listesi (audio/<ad>.mp3). Sayılar 'n5' gibi; 0 = kısa duraklama.
+const N = n => 'n' + n;
 function build(s) {
-  if (s.t === 'add') return { ans: s.a + s.b, tokens: [s.a, '+', s.b, '=', null], say: `${s.a} artı ${s.b} kaç eder?` };
-  if (s.t === 'sub') return { ans: s.a - s.b, tokens: [s.a, '−', s.b, '=', null], say: `${s.a} eksi ${s.b} kaç eder?` };
+  if (s.t === 'add') return { ans: s.a + s.b, tokens: [s.a, '+', s.b, '=', null], say: [N(s.a), 'arti', N(s.b), 'kac_eder'] };
+  if (s.t === 'sub') return { ans: s.a - s.b, tokens: [s.a, '−', s.b, '=', null], say: [N(s.a), 'eksi', N(s.b), 'kac_eder'] };
   if (s.t === 'blank') {
-    const plus = s.op === '+', c = plus ? s.a + s.b : s.a - s.b, sym = plus ? '+' : '−', w = plus ? 'artı' : 'eksi';
+    const plus = s.op === '+', c = plus ? s.a + s.b : s.a - s.b, sym = plus ? '+' : '−', w = plus ? 'arti' : 'eksi';
     return {
       ans: s[s.hole], c,
       tokens: s.hole === 'a' ? [null, sym, s.b, '=', c] : [s.a, sym, null, '=', c],
-      say: s.hole === 'a' ? `Kaç ${w} ${s.b}, ${c} eder?` : `${s.a} ${w} kaç, ${c} eder?`,
+      say: s.hole === 'a' ? ['kac', w, N(s.b), 0, N(c), 'eder'] : [N(s.a), w, 'kac', 0, N(c), 'eder'],
     };
   }
   const nums = Array.from({ length: s.len }, (_, i) => s.start + i * s.step);
   return {
     ans: nums[s.hole], seq: true, tokens: nums.map((n, i) => i === s.hole ? null : n),
-    say: 'Boş kutuya hangi sayı gelir? ' + nums.map((n, i) => i === s.hole ? 'boş' : n).join(', '),
+    say: nums.flatMap((n, i) => [i === s.hole ? 'bos' : N(n), 0]),
   };
 }
 
@@ -146,28 +148,44 @@ const Sound = {
     } catch (e) {}
   },
 };
+// Önceden kaydedilmiş Yelda parçaları (tools/make-audio.sh). Tarayıcının sesli okumasını kullanmıyoruz:
+// cihaza göre aksan değişiyor ve cümleler üst üste biniyordu. Burada tek bir kuyruk var;
+// yeni bir şey söylenince öncekisi hemen susar.
 const Voice = {
-  v: null,
-  init() {
-    if (!('speechSynthesis' in window)) return;
-    const choose = () => { const vs = speechSynthesis.getVoices(); this.v = vs.find(v => v.lang === 'tr-TR') || vs.find(v => /^tr/i.test(v.lang)) || null; };
-    choose(); speechSynthesis.onvoiceschanged = choose;
+  buf: new Map(), playing: [], gen: 0,
+  load(name) {
+    if (!this.buf.has(name)) {
+      this.buf.set(name, fetch(`audio/${name}.mp3`).then(r => r.arrayBuffer())
+        .then(b => new Promise((ok, no) => Sound.ctx.decodeAudioData(b, ok, no)))
+        .catch(() => { this.buf.delete(name); return null; }));
+    }
+    return this.buf.get(name);
   },
-  say(text) {
-    if (!Store.d.sound || !('speechSynthesis' in window)) return;
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'tr-TR'; if (this.v) u.voice = this.v; u.rate = .9; u.pitch = 1.1;
-      speechSynthesis.speak(u);
-    } catch (e) {}
+  async say(parts, delay = 0) {
+    this.stop();
+    if (!Store.d.sound || !Sound.ctx) return;
+    const gen = this.gen;
+    const bufs = await Promise.all(parts.map(p => p === 0 ? 0 : this.load(p)));
+    if (gen !== this.gen) return;               // bu arada başka bir şey söylendi ya da susturuldu
+    const a = Sound.ctx;
+    let t = a.currentTime + .05 + delay;
+    for (const b of bufs) {
+      if (b === 0) { t += .18; continue; }      // kısa duraklama
+      if (!b) continue;
+      const src = a.createBufferSource(); src.buffer = b; src.connect(a.destination); src.start(t);
+      this.playing.push(src);
+      t += b.duration + .04;
+    }
   },
-  stop() { try { speechSynthesis.cancel(); } catch (e) {} },
+  stop() {
+    this.gen++;
+    for (const s of this.playing) try { s.stop(); } catch (e) {}
+    this.playing = [];
+  },
 };
-Voice.init();
 
 /* ================= Ekranlar ================= */
-let screen = 'home', mode = null, round = null, cur = null, busy = false;
+let screen = 'home', mode = null, round = null, cur = null, busy = false, nextTimer = 0;
 const lv = () => Store.d.level;
 const modeOf = k => MODES.find(m => m.key === k);
 
@@ -197,6 +215,7 @@ function renderHome() {
 
 /* ----- Tur ----- */
 function startRound(m) {
+  clearTimeout(nextTimer); Voice.stop();
   mode = m;
   round = { i: 0, score: 0, results: [], repeats: [], recent: [] };
   document.documentElement.style.setProperty('--c', modeOf(m).c);
@@ -207,7 +226,9 @@ function startRound(m) {
 // Sıradaki soru: önce zamanı gelen tekrar, ara ara önceki oyunlarda yanlış yapılanlar, yoksa yeni soru.
 function nextSpec() {
   const r = round;
-  const due = r.repeats.findIndex(x => x.due <= r.i);
+  let due = r.repeats.findIndex(x => x.due <= r.i);
+  // Kalan soru sayısı bekleyen tekrar kadar azaldıysa tekrarı şimdi sor ki tur bitmeden hepsi gelsin.
+  if (due < 0 && r.repeats.length && ROUND - r.i <= r.repeats.length) due = 0;
   if (due >= 0) return { spec: r.repeats.splice(due, 1)[0].spec, repeat: true };
   const pool = Object.values(Store.d.missed)
     .filter(m => m.lv === lv() && (mode === 'mix' || m.spec.t === mode) && !r.recent.includes(JSON.stringify(m.spec)));
@@ -226,7 +247,7 @@ function next() {
   round.recent = [cur.id, ...round.recent].slice(0, 5);
   busy = false;
   render();
-  Voice.say(cur.q.say);
+  // Soru kendiliğinden okunmaz; çocuk 🔈'e dokununca okunur.
 }
 
 function render() {
@@ -305,10 +326,10 @@ function choose(btn, v) {
     if (first && cur.repeat) relieve(cur);
     round.results[round.i] = first ? 'ok' : 'miss';
     Sound.play('right');
-    const word = first ? pick(PRAISE) : 'Aferin!';
-    cheer(word); confetti(); Voice.say(word);
+    const [word, clip] = first ? pick(PRAISE) : PRAISE[0];
+    cheer(word); confetti(); Voice.say([clip], .3);   // önce zil, ardından övgü
     round.i++;
-    setTimeout(next, 1400);
+    nextTimer = setTimeout(next, 1400);
     return;
   }
   cur.tries++;
@@ -316,13 +337,11 @@ function choose(btn, v) {
   Sound.play('wrong');
   if (cur.tries === 1) {
     remember(cur);
-    if (!round.repeats.some(r => r.id === cur.id)) round.repeats.push({ spec: cur.spec, id: cur.id, due: Math.min(round.i + REPEAT_GAP, ROUND - 1) });
+    if (!round.repeats.some(r => r.id === cur.id)) round.repeats.push({ spec: cur.spec, id: cur.id, due: round.i + REPEAT_GAP });
     showHint();
-    Voice.say('Bir daha dene. ' + cur.q.say);
   } else {
     // İkinci yanlışta doğru cevabı göster; çocuk kendisi dokunsun.
     for (const b of $('answers').children) if (+b.dataset.v === cur.q.ans) b.classList.add('reveal'); else b.disabled = true;
-    Voice.say(`Doğru cevap ${cur.q.ans}. Hadi sen dokun!`);
   }
 }
 
@@ -351,12 +370,12 @@ function finish() {
   Store.save();
   const es = $('endStars'); es.innerHTML = '';
   for (let i = 0; i < 3; i++) { const st = el('span', i < stars ? 'on' : '', '★'); st.style.animationDelay = (i * .25) + 's'; es.append(st); }
-  const title = stars === 3 ? 'Mükemmel!' : stars === 2 ? 'Çok iyi!' : 'Güzel çalıştın!';
+  const [title, clip] = stars === 3 ? ['Mükemmel!', 'mukemmel'] : stars === 2 ? ['Çok iyi!', 'cok_iyi'] : ['Güzel çalıştın!', 'guzel_calistin'];
   $('endTitle').textContent = title;
   $('endText').textContent = `${ROUND} sorudan ${s} tanesini ilk seferde bildin.`;
   show('end');
   Sound.play('win'); confetti(40);
-  Voice.say(title);
+  Voice.say([clip], .9);
 }
 
 /* ----- Efektler ----- */
@@ -377,8 +396,9 @@ function confetti(n = 18) {
 /* ================= Olaylar ================= */
 for (const b of document.querySelectorAll('.level')) b.onclick = () => { Sound.play('tap'); Store.d.level = +b.dataset.level; Store.save(); renderHome(); };
 $('soundBtn').onclick = () => { Store.d.sound = !Store.d.sound; Store.save(); if (!Store.d.sound) Voice.stop(); renderHome(); };
-$('homeBtn').onclick = () => { Voice.stop(); show('home'); renderHome(); };
-$('endHomeBtn').onclick = () => { Voice.stop(); show('home'); renderHome(); };
+const goHome = () => { clearTimeout(nextTimer); Voice.stop(); show('home'); renderHome(); };
+$('homeBtn').onclick = goHome;
+$('endHomeBtn').onclick = goHome;
 $('againBtn').onclick = () => startRound(mode);
 $('speakBtn').onclick = () => cur && Voice.say(cur.q.say);
 $('hintBtn').onclick = () => { if (cur) { Sound.play('tap'); showHint(); } };
