@@ -18,7 +18,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 3;          // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v3)
+const VERSION = 4;          // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v4)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -31,13 +31,24 @@ const MODES = [
   { key: 'sud', g: 'shape', label: 'Şekil Sudoku', ico: '🧩', c: '#5B7FEF' },
 ];
 const GROUPS = [['num', 'Sayılar'], ['shape', 'Şekiller']];
+const NUM_TYPES = ['add', 'sub', 'seq', 'blank'];
+// Bahçe: her STARS_PER_FRIEND yıldızda bir yeni arkadaş gelir; ilki baştan açık.
+const FRIENDS = ['🌱', '🌷', '🌼', '🐞', '🌻', '🐝', '🍄', '🦋', '🌳', '🐌', '🐦', '🌸', '🐇', '🍓', '🦔',
+  '🐢', '🌈', '🐿️', '🐸', '🌺', '🦊', '🐥', '🦉', '🍎', '🐑', '🦄', '🌵', '🐠', '🎈', '🏡'];
+const STARS_PER_FRIEND = 3;
+const friendsFor = stars => Math.min(FRIENDS.length, Math.floor(stars / STARS_PER_FRIEND) + 1);
+const FLIERS = ['🐝', '🦋', '🐦', '🌈', '🎈'], BIG = ['🌳', '🏡', '🌈'];
+// Bahçe sahnesindeki yerler (% olarak, sol-üst): çimen 3 sıra, gökyüzü 1 sıra; sıra karışık ki bahçe dengeli dolsun.
+const GROUND_SLOTS = [[50, 70], [22, 62], [78, 64], [36, 80], [64, 82], [8, 76], [92, 78], [30, 60], [70, 58],
+  [50, 86], [16, 86], [84, 86], [43, 64], [58, 70], [6, 62], [94, 62], [26, 74], [74, 74], [38, 88], [62, 88], [50, 56], [18, 54], [82, 54], [34, 52]];
+const SKY_SLOTS = [[28, 22], [62, 16], [44, 34], [78, 30], [12, 30]];
 const EMOJI = ['🍎', '🐟', '⭐', '🍓', '🐞', '🎈', '🧁', '🐥', '🌸', '🍪', '🦋', '🚗'];
 const PRAISE = [['Aferin!', 'aferin'], ['Harika!', 'harika'], ['Süpersin!', 'supersin'], ['Çok güzel!', 'cok_guzel'], ['Bravo!', 'bravo']];
 
 /* ================= Kayıt ================= */
 const Store = {
   key: 'sayi-bahcesi.v1',
-  d: { level: 1, stars: 0, best: {}, missed: {}, sound: true },
+  d: { level: 1, stars: 0, best: {}, missed: {}, sound: true, seen: 1 },
   load() { try { Object.assign(this.d, JSON.parse(localStorage.getItem(this.key)) || {}); } catch (e) {} },
   save() { try { localStorage.setItem(this.key, JSON.stringify(this.d)); } catch (e) {} },
 };
@@ -384,6 +395,7 @@ function show(name) {
 
 function renderHome() {
   $('starsTotal').textContent = Store.d.stars;
+  $('gardenDot').classList.toggle('on', friendsFor(Store.d.stars) > Store.d.seen);
   $('soundBtn').textContent = Store.d.sound ? '🔊' : '🔇';
   for (const b of document.querySelectorAll('.level')) {
     const on = +b.dataset.level === lv();
@@ -410,7 +422,7 @@ function renderHome() {
 function startRound(m) {
   clearTimeout(nextTimer); Voice.stop();
   mode = m;
-  round = { i: 0, score: 0, results: [], repeats: [], recent: [] };
+  round = { i: 0, score: 0, results: [], repeats: [], recent: [], streak: 0 };
   document.documentElement.style.setProperty('--c', modeOf(m).c);
   show('play');
   next();
@@ -424,7 +436,7 @@ function nextSpec() {
   if (due < 0 && r.repeats.length && ROUND - r.i <= r.repeats.length) due = 0;
   if (due >= 0) return { spec: r.repeats.splice(due, 1)[0].spec, repeat: true };
   const pool = Object.values(Store.d.missed)
-    .filter(m => m.lv === lv() && (mode === 'mix' || m.spec.t === mode) && !r.recent.includes(JSON.stringify(m.spec)));
+    .filter(m => m.lv === lv() && (mode === 'mix' ? NUM_TYPES.includes(m.spec.t) : m.spec.t === mode) && !r.recent.includes(JSON.stringify(m.spec)));
   if (pool.length && Math.random() < .3) return { spec: pick(pool).spec, repeat: true };
   for (let k = 0; k < 30; k++) {
     const s = GEN[mode](lv());
@@ -541,12 +553,17 @@ function choose(btn, v) {
     round.results[round.i] = first ? 'ok' : 'miss';
     Sound.play('right');
     const [word, clip] = first ? pick(PRAISE) : PRAISE[0];
-    cheer(word); confetti(); Voice.say([clip], .3);   // önce zil, ardından övgü
+    round.streak = first ? round.streak + 1 : 0;
+    // Üst üste 3, 6, 9 ilk denemede doğru: daha büyük kutlama
+    if (round.streak >= 3 && round.streak % 3 === 0) { cheer('🔥 ' + round.streak); confetti(40); }
+    else { cheer(word); confetti(); }
+    Voice.say([clip], .3);   // önce zil, ardından övgü
     round.i++;
     nextTimer = setTimeout(next, 1400);
     return;
   }
   cur.tries++;
+  round.streak = 0;
   btn.classList.add('wrong'); btn.disabled = true;
   Sound.play('wrong');
   if (cur.tries === 1) {
@@ -579,7 +596,11 @@ function relieve(c) {
 function finish() {
   const s = round.score, stars = s >= 9 ? 3 : s >= 7 ? 2 : 1;
   const key = `${mode}-${lv()}`;
+  const before = friendsFor(Store.d.stars);
   Store.d.stars += stars;
+  const after = friendsFor(Store.d.stars), nw = $('endNew');
+  nw.hidden = after <= before; nw.innerHTML = '';
+  if (after > before) nw.append(el('b', '', FRIENDS[after - 1]), el('span', '', 'Bahçene yeni arkadaş!'));
   Store.d.best[key] = Math.max(Store.d.best[key] || 0, stars);
   Store.save();
   const es = $('endStars'); es.innerHTML = '';
@@ -589,7 +610,34 @@ function finish() {
   $('endText').textContent = `${ROUND} sorudan ${s} tanesini ilk seferde bildin.`;
   show('end');
   Sound.play('win'); confetti(40);
-  Voice.say([clip], .9);
+  Voice.say(after > before ? [clip, 0, 0, 'yeni_arkadas'] : [clip], .9);
+}
+
+/* ----- Bahçe ----- */
+function renderGarden() {
+  const stars = Store.d.stars, open = friendsFor(stars), fresh = Store.d.seen;
+  $('gardenStars').textContent = stars;
+  const g = $('gardenGrid'); g.innerHTML = '';
+  // Uçanlar gökyüzüne, ötekiler çimene; yerleri her açılışta aynı kalsın diye sabit bir sırayla dağıtılır.
+  let sky = 0, ground = 0;
+  FRIENDS.slice(0, open).forEach((f, i) => {
+    const fly = FLIERS.includes(f), k = fly ? sky++ : ground++;
+    const [x, y] = fly ? SKY_SLOTS[k % SKY_SLOTS.length] : GROUND_SLOTS[k % GROUND_SLOTS.length];
+    const b = el('button', 'friend' + (fly ? ' fly' : '') + (BIG.includes(f) ? ' big' : '') + (i >= fresh ? ' fresh' : ''), f);
+    b.style.left = x + '%'; b.style.top = y + '%'; b.style.zIndex = Math.round(y);
+    b.style.animationDelay = (-(i % 5) * .7) + 's';
+    b.setAttribute('aria-label', 'Arkadaş');
+    b.onclick = () => { Sound.play('tap'); b.classList.remove('wiggle', 'fresh'); void b.offsetWidth; b.classList.add('wiggle'); };
+    g.append(b);
+  });
+  const nx = $('gardenNext'); nx.innerHTML = '';
+  if (open >= FRIENDS.length) nx.append(el('span', '', 'Hepsi senin! 🎉'));
+  else {
+    const have = stars % STARS_PER_FRIEND, bar = el('span', 'bar'), fill = el('i'), next = el('span', 'shadow', FRIENDS[open]);
+    fill.style.width = (have / STARS_PER_FRIEND * 100) + '%'; bar.append(fill);
+    nx.append(el('span', 'star', '★'), bar, el('span', '', `${have}/${STARS_PER_FRIEND}`), next);   // sıradaki arkadaşın gölgesi
+  }
+  Store.d.seen = open; Store.save();
 }
 
 /* ----- Efektler ----- */
@@ -612,6 +660,8 @@ for (const b of document.querySelectorAll('.level')) b.onclick = () => { Sound.p
 $('soundBtn').onclick = () => { Store.d.sound = !Store.d.sound; Store.save(); if (!Store.d.sound) Voice.stop(); renderHome(); };
 const goHome = () => { clearTimeout(nextTimer); Voice.stop(); show('home'); renderHome(); };
 $('homeBtn').onclick = goHome;
+$('gardenBtn').onclick = () => { Sound.play('tap'); show('garden'); renderGarden(); };
+$('gardenHomeBtn').onclick = goHome;
 $('endHomeBtn').onclick = goHome;
 $('againBtn').onclick = () => startRound(mode);
 // 🔈: soruyu okur; şekil sorularında ipucu açıksa ipucunu da ekler.

@@ -20,6 +20,8 @@ CLIPS=(
   "bosluga|Boşluğa hangisi gelir?" "ayna|Aynadaki hâli hangisi?" "farkli|Hangisi farklı?"
   "tekrar|Tekrar eden parçaya bak." "ayna_cizgi|Ortadaki çizgi bir ayna." "yan_alt|Yan yana ve alt alta bak."
   "sekline_bak|Şekline bak." "rengine_bak|Rengine bak." "boyuna_bak|Büyüklüğüne bak."
+  # bahçe
+  "yeni_arkadas|Bahçene yeni bir arkadaş geldi!"
 )
 for n in $(seq 0 100); do CLIPS+=("n$n|$n"); done
 
