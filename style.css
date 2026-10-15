@@ -416,7 +416,8 @@ h1 { color: var(--ink); text-shadow: none; }
 .r-ico { width: 50px; height: 50px; border-radius: 16px; background: var(--bg); display: grid; place-items: center; font-size: 28px; }
 .r-lbl { font-size: 18px; line-height: 1.1; }
 .r-sub { font-size: 15px; line-height: 1.15; color: #4B5A72; white-space: nowrap; }
-.reward.empty .r-sub { color: #9AA6B8; }
+.reward.no-ticket .r-sub { color: #9AA6B8; }
+.r-lbl { text-align: center; }
 .reward .tag { position: absolute; top: -8px; right: 6px; background: #E5483B; color: #fff; font-size: 12px; line-height: 20px; padding: 0 7px; border-radius: 10px; box-shadow: 0 0 0 2px #fff; animation: pulse 1s ease-in-out infinite; }
 .reward .tag[hidden] { display: none; }
 .cats { display: flex; flex-direction: column; gap: 12px; }
@@ -456,7 +457,7 @@ h1 { color: var(--ink); text-shadow: none; }
   .home-side { flex: 1; min-width: 0; justify-content: space-between; }
   .reward { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; align-items: center; justify-items: start; padding: 10px 12px; }
   .r-ico { grid-row: 1 / span 2; width: 44px; height: 44px; font-size: 24px; border-radius: 14px; }
-  .r-lbl { align-self: end; }
+  .r-lbl { align-self: end; text-align: left; }
   .r-sub { align-self: start; }
   .cats { flex-direction: row; flex: 1; }
   .cat { flex: 1; }

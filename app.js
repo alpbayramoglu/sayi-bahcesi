@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 13;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v13)
+const VERSION = 14;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v14)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -438,7 +438,7 @@ function renderHome() {
   const maxCoins = 6 + (lv() === 3 ? 2 : 0) + (bestOf(m.key) < 3 ? 1 : 0);
   $('lootCoins').textContent = `🪙 ${maxCoins} altına kadar`;
   $('warSub').textContent = Store.d.tickets > 0 ? `🎟️ ${Store.d.tickets} bilet` : '🎟️ yok';
-  $('warBtn').classList.toggle('empty', !(Store.d.tickets > 0));
+  $('warBtn').classList.toggle('no-ticket', !(Store.d.tickets > 0));
   $('gardenSub').textContent = `★ ${Store.d.stars}`;
   $('gardenDot').hidden = !(friendsFor(Store.d.stars) > Store.d.seen);
   $('shopSub').textContent = `🪙 ${Store.d.coins}`;
