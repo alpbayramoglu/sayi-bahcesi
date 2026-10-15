@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 10;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v10)
+const VERSION = 11;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v11)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -43,28 +43,28 @@ const TICKET_MAX = 3;
 // Savaş eşyaları (anahtarlar savas/game.js içindeki ITEMS ile aynı). num: sayı seçerek kullanılır.
 const SHOP_GROUPS = [['throw', 'Atılanlar'], ['num', 'Sayılı'], ['def', 'Savunma']];
 const SHOP = [
-  { key: 'balloon', desc: "Patlayınca her yer su olur. Çarptığı yerde büyük bir çukur açar, rakibi ıslatır.", how: "Çantadan seç, parmağını geri çek, bırak.", tip: "Rüzgârdan çok etkilenir: rüzgâr okuna bak!", g: 'throw', ico: '💦', name: 'Su Balonu', info: 'Büyük patlar', price: 2 },
-  { key: 'paint', desc: "Yere çarpınca bir kez zıplar, sonra patlar ve etrafı pembeye boyar.", how: "Çantadan seç, geri çek, bırak.", tip: "Zıpladığı için rakibin biraz önüne nişan al.", g: 'throw', ico: '🎨', name: 'Boya Küpü', info: 'Zıplar, boyar', price: 3 },
-  { key: 'fish', desc: "Çok hafif uçar, neredeyse dümdüz gider. Uzaktaki rakibe yetişir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu pek itemez.", g: 'throw', ico: '🐟', name: 'Balık', info: 'Dümdüz uçar', price: 4 },
-  { key: 'bigball', desc: "Kocaman ve ağır bir kartopu. Kısa gider ama büyük bir çukur açar, rakibin başı döner.", how: "Çantadan seç, güçlü çek, bırak.", tip: "Ağır olduğu için yakındaki rakibe at.", g: 'throw', ico: '⚪', name: 'Dev Kartopu', info: 'Ağır, kocaman çukur', price: 3 },
-  { key: 'bouncy', desc: "Üç kez seker, sonra rengârenk patlar.", how: "Çantadan seç, geri çek, bırak.", tip: "Duvarın arkasındaki rakibe sektirerek ulaşabilirsin.", g: 'throw', ico: '🥎', name: 'Zıp Zıp Top', info: 'Üç kez seker', price: 3 },
-  { key: 'melon', desc: "Çarpınca dört dilime ayrılır, her dilim ayrıca patlar.", how: "Çantadan seç, geri çek, bırak.", tip: "Rakibin tam üstüne düşerse dilimler etrafa saçılır.", g: 'throw', ico: '🍉', name: 'Karpuz', info: 'Dört dilime ayrılır', price: 5 },
-  { key: 'boomerang', desc: "Uçar uçar, sonra geri döner. Arkadaki rakibi bile vurabilir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu çok iter.", g: 'throw', ico: '🪃', name: 'Bumerang', info: 'Geri döner', price: 4 },
-  { key: 'cake', desc: "Rakibin yüzüne krema yapışır. Bir sonraki turunda yürüyemez!", how: "Çantadan seç, geri çek, bırak.", tip: "Kaçmaya çalışan rakibe at.", g: 'throw', ico: '🎂', name: 'Pasta', info: 'Rakip bir tur yürüyemez', price: 4 },
-  { key: 'tickle', desc: "Hiç acıtmaz, sadece gıdıklar. Rakip gülmekten kayar.", how: "Çantadan seç, geri çek, bırak.", tip: "Uçurumun kenarındaki rakibi suya kaydırabilir!", g: 'throw', ico: '🪶', name: 'Gıdıklama Tüyü', info: 'Hihi! Rakibi kaydırır', price: 2 },
-  { key: 'pepper', desc: "Rakip biberin tozunu yutar, önce \"ha... ha...\" der, sonra HAPŞU! diye geriye uçar.", how: "Çantadan seç, geri çek, bırak.", tip: "Suya yakın rakibe at.", g: 'throw', ico: '🌶️', name: 'Hapşırık Biberi', info: 'Rakibi uçurur', price: 4 },
-  { key: 'clock', desc: "Çalar saati sen kurarsın: kaç saniye sonra çalacağını seçersin. Seker, yuvarlanır, zamanı gelince çalar.", how: "Çantadan seç, ⏰ ile saniyeyi ayarla, geri çek, bırak.", tip: "Rakibin yanına yuvarlanması için az güçle at.", g: 'num', ico: '⏰', name: 'Çalar Saat', info: 'Kaç saniye sonra?', price: 4 },
-  { key: 'frog', desc: "Kurbağa rakibe doğru zıplar. Kaç kere zıplayacağını sen seçersin; her zıplama cetvelde bir sayı.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Cetvelde senin sayından kedinin sayısına kaç tane var, say!", g: 'num', ico: '🐸', name: 'Zıp Zıp Kurbağa', info: 'Kaç kere zıplasın?', price: 5 },
-  { key: 'chicken', desc: "Tavuk rakibe doğru koşar. Kaç adım koşacağını sen seçersin; her adım cetvelde bir sayı.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Yüksek duvar görürse orada patlar.", g: 'num', ico: '🐔', name: 'Koşan Tavuk', info: 'Kaç adım koşsun?', price: 5 },
-  { key: 'bugs', desc: "Uçak, seçtiğin sayının üstünden uğur böcekleri bırakır. Rüzgâr böcekleri iter!", how: "Çantadan seç, cetvelden sayıyı seç, TAMAM.", tip: "Rüzgâr +2 ise böcekler 2 sağa kayar. Kedi 9’daysa 7’yi seç!", g: 'num', ico: '🐞', name: 'Böcek Uçağı', info: 'Sayıyı seç, rüzgârı ekle', price: 8 },
-  { key: 'meteor', desc: "Gökten taşlar yağar. İki sayı seçersin, aradaki her sayıya bir taş düşer.", how: "Çantadan seç, iki sayıyı ayarla, TAMAM.", tip: "En fazla 5 sayılık bir aralık seçebilirsin.", g: 'num', ico: '☄️', name: 'Meteor Yağmuru', info: 'Bu sayıdan şu sayıya', price: 10 },
-  { key: 'teleport', desc: "Pıt! diye seçtiğin sayıya ışınlanırsın.", how: "Çantadan seç, cetvelden sayıyı seç, TAMAM.", tip: "Suyun üstüne ışınlanamazsın.", g: 'num', ico: '✨', name: 'Işınlanma', info: 'Bir sayıya ışınlan', price: 6 },
-  { key: 'flyballoon', desc: "Balon seni havaya kaldırır ve seçtiğin sayıya götürür. Ama rüzgâr seni biraz daha iter!", how: "Çantadan seç, sayıyı seç, TAMAM.", tip: "Rüzgâr −1 ise 1 sola inersin. Hesapla!", g: 'num', ico: '🎈', name: 'Uçan Balon', info: 'Rüzgârla uç', price: 5 },
-  { key: 'wall', desc: "Önüne kardan bir duvar örer. Kaç blok yüksek olacağını sen seçersin.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Duvarın arkasına saklan, kartoplar çarpsın.", g: 'num', ico: '🧱', name: 'Kardan Duvar', info: 'Kaç blok yüksek?', price: 3 },
-  { key: 'bridge', desc: "Önüne tahtadan bir köprü kurar. Kaç blok uzun olacağını sen seçersin.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Suyun üstünden geçmek için köprü kur, sonra yürü.", g: 'num', ico: '🌉', name: 'Sayı Köprüsü', info: 'Kaç blok uzun?', price: 4 },
-  { key: 'umbrella', desc: "Bir tur boyunca seni korur. İlk isabet şemsiyeye çarpar.", how: "Çantadan seç, KULLAN.", tip: "Kalbin azaldıysa kullan.", g: 'def', ico: '☂️', name: 'Şemsiye', info: 'Bir tur kalkan', price: 5 },
-  { key: 'chute', desc: "Yüksekten düşerken kendiliğinden açılır, yavaşça inersin.", how: "Çantanda olması yeter, kendisi çalışır.", tip: "Kale ve gemilerde çok işe yarar.", g: 'def', ico: '🪂', name: 'Paraşüt', info: 'Düşerken açılır', price: 3 },
-  { key: 'potion', desc: "Bir kalbini geri getirir. Turun bitmez, sonra atış da yapabilirsin.", how: "Çantadan seç, KULLAN.", tip: "Kalplerin doluysa kullanılamaz.", g: 'def', ico: '🧪', name: 'Kalp İksiri', info: '+1 kalp', price: 12 },
+  { key: 'balloon', desc: "Patlayınca her yer su olur. Çarptığı yerde büyük bir çukur açar, rakibi ıslatır.", how: "Çantadan seç, parmağını geri çek, bırak.", tip: "Rüzgârdan çok etkilenir: rüzgâr okuna bak!", g: 'throw', ico: '💦', name: 'Su Balonu', info: 'Büyük patlar', price: 1 },
+  { key: 'paint', desc: "Yere çarpınca bir kez zıplar, sonra patlar ve etrafı pembeye boyar.", how: "Çantadan seç, geri çek, bırak.", tip: "Zıpladığı için rakibin biraz önüne nişan al.", g: 'throw', ico: '🎨', name: 'Boya Küpü', info: 'Zıplar, boyar', price: 2 },
+  { key: 'fish', desc: "Çok hafif uçar, neredeyse dümdüz gider. Uzaktaki rakibe yetişir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu pek itemez.", g: 'throw', ico: '🐟', name: 'Balık', info: 'Dümdüz uçar', price: 3 },
+  { key: 'bigball', desc: "Kocaman ve ağır bir kartopu. Kısa gider ama büyük bir çukur açar, rakibin başı döner.", how: "Çantadan seç, güçlü çek, bırak.", tip: "Ağır olduğu için yakındaki rakibe at.", g: 'throw', ico: '⚪', name: 'Dev Kartopu', info: 'Ağır, kocaman çukur', price: 2 },
+  { key: 'bouncy', desc: "Üç kez seker, sonra rengârenk patlar.", how: "Çantadan seç, geri çek, bırak.", tip: "Duvarın arkasındaki rakibe sektirerek ulaşabilirsin.", g: 'throw', ico: '🥎', name: 'Zıp Zıp Top', info: 'Üç kez seker', price: 2 },
+  { key: 'melon', desc: "Çarpınca dört dilime ayrılır, her dilim ayrıca patlar.", how: "Çantadan seç, geri çek, bırak.", tip: "Rakibin tam üstüne düşerse dilimler etrafa saçılır.", g: 'throw', ico: '🍉', name: 'Karpuz', info: 'Dört dilime ayrılır', price: 3 },
+  { key: 'boomerang', desc: "Uçar uçar, sonra geri döner. Arkadaki rakibi bile vurabilir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu çok iter.", g: 'throw', ico: '🪃', name: 'Bumerang', info: 'Geri döner', price: 3 },
+  { key: 'cake', desc: "Rakibin yüzüne krema yapışır. Bir sonraki turunda yürüyemez!", how: "Çantadan seç, geri çek, bırak.", tip: "Kaçmaya çalışan rakibe at.", g: 'throw', ico: '🎂', name: 'Pasta', info: 'Rakip bir tur yürüyemez', price: 3 },
+  { key: 'tickle', desc: "Hiç acıtmaz, sadece gıdıklar. Rakip gülmekten kayar.", how: "Çantadan seç, geri çek, bırak.", tip: "Uçurumun kenarındaki rakibi suya kaydırabilir!", g: 'throw', ico: '🪶', name: 'Gıdıklama Tüyü', info: 'Hihi! Rakibi kaydırır', price: 1 },
+  { key: 'pepper', desc: "Rakip biberin tozunu yutar, önce \"ha... ha...\" der, sonra HAPŞU! diye geriye uçar.", how: "Çantadan seç, geri çek, bırak.", tip: "Suya yakın rakibe at.", g: 'throw', ico: '🌶️', name: 'Hapşırık Biberi', info: 'Rakibi uçurur', price: 3 },
+  { key: 'clock', desc: "Çalar saati sen kurarsın: kaç saniye sonra çalacağını seçersin. Seker, yuvarlanır, zamanı gelince çalar.", how: "Çantadan seç, ⏰ ile saniyeyi ayarla, geri çek, bırak.", tip: "Rakibin yanına yuvarlanması için az güçle at.", g: 'num', ico: '⏰', name: 'Çalar Saat', info: 'Kaç saniye sonra?', price: 3 },
+  { key: 'frog', desc: "Kurbağa rakibe doğru zıplar. Kaç kere zıplayacağını sen seçersin; her zıplama cetvelde bir sayı.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Cetvelde senin sayından kedinin sayısına kaç tane var, say!", g: 'num', ico: '🐸', name: 'Zıp Zıp Kurbağa', info: 'Kaç kere zıplasın?', price: 3 },
+  { key: 'chicken', desc: "Tavuk rakibe doğru koşar. Kaç adım koşacağını sen seçersin; her adım cetvelde bir sayı.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Yüksek duvar görürse orada patlar.", g: 'num', ico: '🐔', name: 'Koşan Tavuk', info: 'Kaç adım koşsun?', price: 3 },
+  { key: 'bugs', desc: "Uçak, seçtiğin sayının üstünden uğur böcekleri bırakır. Rüzgâr böcekleri iter!", how: "Çantadan seç, cetvelden sayıyı seç, TAMAM.", tip: "Rüzgâr +2 ise böcekler 2 sağa kayar. Kedi 9’daysa 7’yi seç!", g: 'num', ico: '🐞', name: 'Böcek Uçağı', info: 'Sayıyı seç, rüzgârı ekle', price: 5 },
+  { key: 'meteor', desc: "Gökten taşlar yağar. İki sayı seçersin, aradaki her sayıya bir taş düşer.", how: "Çantadan seç, iki sayıyı ayarla, TAMAM.", tip: "En fazla 5 sayılık bir aralık seçebilirsin.", g: 'num', ico: '☄️', name: 'Meteor Yağmuru', info: 'Bu sayıdan şu sayıya', price: 7 },
+  { key: 'teleport', desc: "Pıt! diye seçtiğin sayıya ışınlanırsın.", how: "Çantadan seç, cetvelden sayıyı seç, TAMAM.", tip: "Suyun üstüne ışınlanamazsın.", g: 'num', ico: '✨', name: 'Işınlanma', info: 'Bir sayıya ışınlan', price: 4 },
+  { key: 'flyballoon', desc: "Balon seni havaya kaldırır ve seçtiğin sayıya götürür. Ama rüzgâr seni biraz daha iter!", how: "Çantadan seç, sayıyı seç, TAMAM.", tip: "Rüzgâr −1 ise 1 sola inersin. Hesapla!", g: 'num', ico: '🎈', name: 'Uçan Balon', info: 'Rüzgârla uç', price: 3 },
+  { key: 'wall', desc: "Önüne kardan bir duvar örer. Kaç blok yüksek olacağını sen seçersin.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Duvarın arkasına saklan, kartoplar çarpsın.", g: 'num', ico: '🧱', name: 'Kardan Duvar', info: 'Kaç blok yüksek?', price: 2 },
+  { key: 'bridge', desc: "Önüne tahtadan bir köprü kurar. Kaç blok uzun olacağını sen seçersin.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Suyun üstünden geçmek için köprü kur, sonra yürü.", g: 'num', ico: '🌉', name: 'Sayı Köprüsü', info: 'Kaç blok uzun?', price: 2 },
+  { key: 'umbrella', desc: "Bir tur boyunca seni korur. İlk isabet şemsiyeye çarpar.", how: "Çantadan seç, KULLAN.", tip: "Gücün azaldıysa kullan.", g: 'def', ico: '☂️', name: 'Şemsiye', info: 'Bir tur kalkan', price: 3 },
+  { key: 'chute', desc: "Yüksekten düşerken kendiliğinden açılır, yavaşça inersin.", how: "Çantanda olması yeter, kendisi çalışır.", tip: "Kale ve gemilerde çok işe yarar.", g: 'def', ico: '🪂', name: 'Paraşüt', info: 'Düşerken açılır', price: 2 },
+  { key: 'potion', desc: "Gücünü 35 artırır. Turun bitmez, sonra atış da yapabilirsin.", how: "Çantadan seç, KULLAN.", tip: "Gücün tam doluysa kullanılamaz.", g: 'def', ico: '🧪', name: 'Güç İksiri', info: '+35 güç', price: 7 },
 ];
 const friendsFor = stars => Math.min(FRIENDS.length, Math.floor(stars / STARS_PER_FRIEND) + 1);
 const FLIERS = ['🐝', '🦋', '🐦', '🌈', '🎈'], BIG = ['🌳', '🏡', '🌈'];
@@ -974,8 +974,8 @@ function finish() {
   const [title, clip] = stars === 3 ? ['Mükemmel!', 'mukemmel'] : stars === 2 ? ['Çok iyi!', 'cok_iyi'] : ['Güzel çalıştın!', 'guzel_calistin'];
   $('endTitle').textContent = title;
   $('endText').textContent = `${ROUND} sorudan ${s} tanesini ilk seferde bildin.`;
-  // Altın: yıldız kadar, Zor seviyede +1, yeni rekorda +1. Bilet: tur başına 1, en fazla TICKET_MAX.
-  const coins = stars + (lv() === 3 ? 1 : 0) + (stars > prevBest ? 1 : 0);
+  // Altın: yıldız başına 2, Zor seviyede +2, yeni rekorda +1. Bilet: tur başına 1, en fazla TICKET_MAX.
+  const coins = stars * 2 + (lv() === 3 ? 2 : 0) + (stars > prevBest ? 1 : 0);
   const ticket = Store.d.tickets < TICKET_MAX;
   Store.d.coins += coins; if (ticket) Store.d.tickets++;
   Store.save();
