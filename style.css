@@ -345,3 +345,7 @@ input.p-input, textarea.p-input { -webkit-user-select: text; user-select: text; 
   background: radial-gradient(circle at 34% 30%, #FFF6C2 0 16%, #FFD43B 17% 60%, #E5A400 61%);
   box-shadow: inset 0 0 0 .08em #C98A00, 0 .06em 0 rgba(36, 50, 74, .18);
 }
+.shop-group { grid-column: 1 / -1; margin: 6px 0 0 6px; font-size: 20px; color: #fff; text-shadow: 0 2px 0 rgba(36, 50, 74, .22); }
+.shop-card { position: relative; }
+.shop-badge { position: absolute; top: 8px; right: 10px; font-size: 18px; }
+.shop-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }

@@ -20,3 +20,11 @@ Yazı tipi: Baloo 2 (SIL OFL 1.1, `fonts/OFL-baloo2.txt`).
 - **Yıldız ★:** Hiç harcanmaz, Bahçem'i büyütür.
 - **Ebeveyn paneli (⚙️):** 4 haneli PIN ile açılır (unutulursa yetişkin sorusuyla sıfırlanır). Görev türleri: bir kez, N gün üst üste, haftada N kez. Çocuk "Yaptım!" der, ebeveyn onaylar; hedef dolunca ödül verilir ve çocuk ana sayfaya dönünce kutlama görür. Panelde yedek kodu alma / geri yükleme var; Safari verileri silinirse ilerleme buradan geri gelir.
 - Her şey cihazın kendi kaydında (localStorage) durur; sunucu yok. PIN bir çocuk kilidi, şifreleme değil.
+
+## Kartopu Savaşı
+
+- **Bölümler:** 12 bölüm, 4 ada. Çimen ve Kar adaları tek ekran; Kale Adası (72 sütun, taş kaleler) ve Korsan Koyu (90 sütun, gemiler) ekrandan geniştir. Kamera sırası gelen karakteri ve mermiyi izler; kenardaki oklarla kaydırılır, üstteki mini haritaya dokununca oraya gider. 9. bölüm 2'ye 2, 11. bölüm 2'ye 2, 12. bölüm 3'e 3.
+- **2 oyuncu:** Çimen, Kar, Kale, Korsan ve Sürpriz haritaları; takım başına 1, 2 ya da 3 karakter.
+- **Eşyalar (23):** Atılanlar (kartopu, su balonu, boya küpü, balık, dev kartopu, zıp zıp top, karpuz, bumerang, pasta, gıdıklama tüyü, hapşırık biberi, çalar saat), sayılılar (zıp zıp kurbağa, koşan tavuk, böcek uçağı, meteor yağmuru, ışınlanma, uçan balon, kardan duvar, sayı köprüsü), savunma (şemsiye, kalp iksiri, paraşüt). 🎒 çantadan seçilir.
+- **Sayı cetveli:** Haritanın altında her 3 blok bir sayı. Sayılı eşyalarda çocuk bir sayı seçer: böcek uçağı ve uçan balonda rüzgâr da sayıdır (rüzgâr +2 ise böcekler seçilen sayının 2 sağına düşer), kurbağada kaç zıplama, duvarda kaç blok gibi.
+- **Bilgisayar:** Ulaşamadığı rakibe yürür; elinde böcek uçağı varsa onu kullanır. İlk atışlarda ve çocuğun tek kalbi kaldığında daha çok ıskalar.

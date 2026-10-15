@@ -18,7 +18,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 5;          // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v5)
+const VERSION = 6;          // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v6)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -39,10 +39,31 @@ const STARS_PER_FRIEND = 3;
 // Ekonomi: yıldız bahçe için birikir (hiç harcanmaz). Altın dükkânda harcanır.
 // Her matematik turu bir maç bileti verir; bilet en fazla TICKET_MAX birikir ki matematik → oyun döngüsü korunsun.
 const TICKET_MAX = 3;
+// Savaş eşyaları (anahtarlar savas/game.js içindeki ITEMS ile aynı). num: sayı seçerek kullanılır.
+const SHOP_GROUPS = [['throw', 'Atılanlar'], ['num', 'Sayılı'], ['def', 'Savunma']];
 const SHOP = [
-  { key: 'balloon', ico: '🎈', name: 'Su Balonu', info: 'Büyük patlar', price: 2 },
-  { key: 'paint', ico: '🎨', name: 'Boya Küpü', info: 'Zıplar, boyar', price: 3 },
-  { key: 'fish', ico: '🐟', name: 'Balık', info: 'Dümdüz uçar', price: 4 },
+  { key: 'balloon', g: 'throw', ico: '💦', name: 'Su Balonu', info: 'Büyük patlar', price: 2 },
+  { key: 'paint', g: 'throw', ico: '🎨', name: 'Boya Küpü', info: 'Zıplar, boyar', price: 3 },
+  { key: 'fish', g: 'throw', ico: '🐟', name: 'Balık', info: 'Dümdüz uçar', price: 4 },
+  { key: 'bigball', g: 'throw', ico: '⚪', name: 'Dev Kartopu', info: 'Ağır, kocaman çukur', price: 3 },
+  { key: 'bouncy', g: 'throw', ico: '🥎', name: 'Zıp Zıp Top', info: 'Üç kez seker', price: 3 },
+  { key: 'melon', g: 'throw', ico: '🍉', name: 'Karpuz', info: 'Dört dilime ayrılır', price: 5 },
+  { key: 'boomerang', g: 'throw', ico: '🪃', name: 'Bumerang', info: 'Geri döner', price: 4 },
+  { key: 'cake', g: 'throw', ico: '🎂', name: 'Pasta', info: 'Rakip bir tur yürüyemez', price: 4 },
+  { key: 'tickle', g: 'throw', ico: '🪶', name: 'Gıdıklama Tüyü', info: 'Hihi! Rakibi kaydırır', price: 2 },
+  { key: 'pepper', g: 'throw', ico: '🌶️', name: 'Hapşırık Biberi', info: 'Rakibi uçurur', price: 4 },
+  { key: 'clock', g: 'num', ico: '⏰', name: 'Çalar Saat', info: 'Kaç saniye sonra?', price: 4 },
+  { key: 'frog', g: 'num', ico: '🐸', name: 'Zıp Zıp Kurbağa', info: 'Kaç kere zıplasın?', price: 5 },
+  { key: 'chicken', g: 'num', ico: '🐔', name: 'Koşan Tavuk', info: 'Kaç adım koşsun?', price: 5 },
+  { key: 'bugs', g: 'num', ico: '🐞', name: 'Böcek Uçağı', info: 'Sayıyı seç, rüzgârı ekle', price: 8 },
+  { key: 'meteor', g: 'num', ico: '☄️', name: 'Meteor Yağmuru', info: 'Bu sayıdan şu sayıya', price: 10 },
+  { key: 'teleport', g: 'num', ico: '✨', name: 'Işınlanma', info: 'Bir sayıya ışınlan', price: 6 },
+  { key: 'flyballoon', g: 'num', ico: '🎈', name: 'Uçan Balon', info: 'Rüzgârla uç', price: 5 },
+  { key: 'wall', g: 'num', ico: '🧱', name: 'Kardan Duvar', info: 'Kaç blok yüksek?', price: 3 },
+  { key: 'bridge', g: 'num', ico: '🌉', name: 'Sayı Köprüsü', info: 'Kaç blok uzun?', price: 4 },
+  { key: 'umbrella', g: 'def', ico: '☂️', name: 'Şemsiye', info: 'Bir tur kalkan', price: 5 },
+  { key: 'chute', g: 'def', ico: '🪂', name: 'Paraşüt', info: 'Düşerken açılır', price: 3 },
+  { key: 'potion', g: 'def', ico: '🧪', name: 'Kalp İksiri', info: '+1 kalp', price: 12 },
 ];
 const friendsFor = stars => Math.min(FRIENDS.length, Math.floor(stars / STARS_PER_FRIEND) + 1);
 const FLIERS = ['🐝', '🦋', '🐦', '🌈', '🎈'], BIG = ['🌳', '🏡', '🌈'];
@@ -458,19 +479,25 @@ function goWar() {
 function renderShop() {
   $('shopCoins').textContent = Store.d.coins;
   const g = $('shopGrid'); g.innerHTML = '';
-  for (const it of SHOP) {
-    const card = el('div', 'shop-card'), have = Store.d.inv[it.key] || 0, poor = Store.d.coins < it.price;
-    card.append(el('div', 'shop-ico', it.ico), el('div', 'shop-name', it.name), el('div', 'shop-info', it.info), el('div', 'shop-have', `🎒 ${have}`));
-    const buy = el('button', 'big-btn buy' + (poor ? ' poor' : ''), `🪙 ${it.price}`);
-    buy.setAttribute('aria-label', `${it.name} al, ${it.price} altın`);
-    buy.onclick = () => {
-      if (Store.d.coins < it.price) { Sound.play('wrong'); buy.classList.remove('shake'); void buy.offsetWidth; buy.classList.add('shake'); return; }
-      Store.d.coins -= it.price; Store.d.inv[it.key] = have + 1; Store.save();
-      Sound.play('right'); confetti(14); renderShop();
-      g.children[SHOP.indexOf(it)].classList.add('bought');
-    };
-    card.append(buy);
-    g.append(card);
+  for (const [grp, title] of SHOP_GROUPS) {
+    g.append(el('h2', 'shop-group', title));
+    for (const it of SHOP.filter(x => x.g === grp)) {
+      const card = el('div', 'shop-card'), have = Store.d.inv[it.key] || 0, poor = Store.d.coins < it.price;
+      card.append(el('div', 'shop-ico', it.ico), el('div', 'shop-name', it.name), el('div', 'shop-info', it.info), el('div', 'shop-have', `🎒 ${have}`));
+      if (grp === 'num') card.append(el('span', 'shop-badge', '🔢'));
+      const buy = el('button', 'big-btn buy' + (poor ? ' poor' : ''), `🪙 ${it.price}`);
+      buy.setAttribute('aria-label', `${it.name} al, ${it.price} altın`);
+      buy.onclick = () => {
+        if (Store.d.coins < it.price) { Sound.play('wrong'); buy.classList.remove('shake'); void buy.offsetWidth; buy.classList.add('shake'); return; }
+        Store.d.coins -= it.price; Store.d.inv[it.key] = (Store.d.inv[it.key] || 0) + 1; Store.save();
+        Sound.play('right'); confetti(14);
+        const top = g.scrollTop; renderShop(); g.scrollTop = top;
+        g.querySelector(`[data-k="${it.key}"]`).classList.add('bought');
+      };
+      card.dataset.k = it.key;
+      card.append(buy);
+      g.append(card);
+    }
   }
 }
 
