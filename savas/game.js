@@ -2212,26 +2212,20 @@ function drawAim(ch) {
       const f = left / total, r = Math.round(2 + 3 * f);
       ctx.save(); ctx.globalAlpha = .35 + .65 * f;
       ell(ctx, q.x, q.y, r + 1.6, r + 1.6); ctx.fillStyle = INK; ctx.fill();
-      ell(ctx, q.x, q.y, r, r); ctx.fillStyle = '#FFFFFF'; ctx.fill();
+      ell(ctx, q.x, q.y, r, r); ctx.fillStyle = `hsl(${120 - 120 * pw},85%,${62 - 10 * pw}%)`; ctx.fill();
       ctx.restore();
     }
   }
   const sp = Math.hypot(vx, vy) || 1, ux = vx / sp, uy = vy / sp;
   const bx = hx - ux * pull * 48, by = hy - uy * pull * 48;
-  // güç: yeşil → sarı → kırmızı; tam güçte titrer ve MAX yazar
-  const hue = 120 - 120 * pull, col = `hsl(${hue},85%,50%)`, max = pull >= .999;
+  // güç: başın üstünde ince bir çubuk, yeşil → sarı → kırmızı; tam güçte titrer ve MAX yazar
+  const hue = 120 - 120 * pull, col = `hsl(${hue},85%,48%)`, max = pull >= .999;
   if (!team.cpu) {
-    ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(30,34,51,.35)'; ell(ctx, hx, hy, 34, 34); ctx.stroke();
-    ctx.beginPath(); ctx.arc(hx, hy, 34, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pull); ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.stroke();
-    const jit = max ? Math.sin(time * 60) * 1.5 : 0, L = 26 + 46 * pull, tx = hx + ux * L + jit, ty = hy + uy * L + jit;
-    const arrow = (w, c) => {
-      ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(hx + ux * 12, hy + uy * 12); ctx.lineTo(tx - ux * 8, ty - uy * 8); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx - ux * 14 - uy * 9, ty - uy * 14 + ux * 9); ctx.lineTo(tx - ux * 14 + uy * 9, ty - uy * 14 - ux * 9); ctx.closePath();
-      ctx.fillStyle = c; ctx.lineJoin = 'round'; ctx.fill(); ctx.stroke();
-    };
-    arrow(11, INK); arrow(6, col);
-    if (max) { text('MAX!', hx, hy - 58 + Math.sin(time * 12) * 2, 22, { color: '#FF5A4E', lw: 5 }); if (!play.maxTick) { play.maxTick = true; Sound.play('tick'); Sound.play('pop'); } }
+    const jit = max ? Math.sin(time * 60) * 1.2 : 0, bw = 46, bh = 7, bx0 = ch.x - bw / 2 + jit, by0 = ch.y - 84;
+    rr(ctx, bx0 - 2, by0 - 2, bw + 4, bh + 4, 5); ctx.fillStyle = INK; ctx.fill();
+    rr(ctx, bx0, by0, bw, bh, 3.5); ctx.fillStyle = '#E3E9F0'; ctx.fill();
+    if (pull > .02) { rr(ctx, bx0, by0, bw * pull, bh, 3.5); ctx.fillStyle = col; ctx.fill(); }
+    if (max) { text('MAX', ch.x + bw / 2 + 20, by0 + 3, 13, { color: '#FF5A4E', lw: 4 }); if (!play.maxTick) { play.maxTick = true; Sound.play('tick'); } }
     else play.maxTick = false;
   }
   ctx.strokeStyle = team.cpu ? '#8A5D39' : col; ctx.lineWidth = 4; ctx.lineCap = 'round';
