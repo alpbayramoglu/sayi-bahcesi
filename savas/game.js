@@ -741,17 +741,17 @@ const ITEMS = {
   pepper: { name: 'Hapşırık Biberi', emoji: '🌶️', kind: 'throw', r: 30, carve: 14, wind: .6, sneeze: true, word: 'PUF!', sound: 'pof', colors: ['#E5483B', '#FF9F43', '#FFFFFF'] },
   clock: { name: 'Çalar Saat', emoji: '⏰', kind: 'throw', r: 38, wind: .5, fuse: true, word: 'ÇIIIN!', sound: 'ring', colors: ['#FFD23F', '#E5483B', '#FFFFFF'] },
   frog: { name: 'Zıp Zıp Kurbağa', emoji: '🐸', kind: 'pick', r: 32, word: 'VRAK!', sound: 'pof', colors: ['#7FE05C', '#2E7D32', '#FFFFFF'],
-    pick: { type: 'count', min: 1, max: 10, def: 3, dir: true, label: 'Kaç kere zıplasın?' } },
+    pick: { type: 'count', min: 1, max: 15, def: 3, label: 'Kaç kere zıplasın?' } },
   chicken: { name: 'Koşan Tavuk', emoji: '🐔', kind: 'pick', r: 32, word: 'GIDAK!', sound: 'pof', colors: ['#FFFFFF', '#E5483B', '#FFD23F'],
-    pick: { type: 'count', min: 1, max: 10, def: 3, dir: true, label: 'Kaç adım koşsun?' } },
+    pick: { type: 'count', min: 1, max: 15, def: 3, label: 'Kaç adım koşsun?' } },
   bugs: { name: 'Böcek Uçağı', emoji: '🐞', kind: 'pick', r: 24, word: 'VIZZ!', sound: 'pof', colors: ['#E5483B', '#1E2233', '#FFFFFF'],
     pick: { type: 'pos', wind: true, label: 'Uçak böcekleri hangi sayıya bıraksın?' } },
   meteor: { name: 'Meteor Yağmuru', emoji: '☄️', kind: 'pick', r: 26, word: 'BUM!', sound: 'pof', colors: ['#FF9F43', '#FFD23F', '#8A5D39'],
     pick: { type: 'range', span: 5, label: 'Hangi sayıdan hangi sayıya?' } },
   teleport: { name: 'Işınlanma', emoji: '✨', kind: 'pick', pick: { type: 'pos', land: true, label: 'Hangi sayıya ışınlanalım?' } },
   flyballoon: { name: 'Uçan Balon', emoji: '🎈', kind: 'pick', pick: { type: 'pos', wind: true, label: 'Balon seni hangi sayıya götürsün?' } },
-  wall: { name: 'Kardan Duvar', emoji: '🧱', kind: 'pick', pick: { type: 'count', min: 1, max: 5, def: 3, dir: true, label: 'Duvar kaç blok yüksek olsun?' } },
-  bridge: { name: 'Sayı Köprüsü', emoji: '🌉', kind: 'pick', pick: { type: 'count', min: 2, max: 12, def: 4, dir: true, label: 'Köprü kaç blok olsun?' } },
+  wall: { name: 'Kardan Duvar', emoji: '🧱', kind: 'pick', pick: { type: 'count', min: 1, max: 5, def: 3, label: 'Duvar kaç blok yüksek olsun?' } },
+  bridge: { name: 'Sayı Köprüsü', emoji: '🌉', kind: 'pick', pick: { type: 'count', min: 2, max: 12, def: 4, label: 'Köprü kaç blok olsun?' } },
   umbrella: { name: 'Şemsiye', emoji: '☂️', kind: 'self', label: 'Şemsiye seni bir tur korur' },
   potion: { name: 'Kalp İksiri', emoji: '🧪', kind: 'self', keepTurn: true, label: '+1 kalp' },
   chute: { name: 'Paraşüt', emoji: '🪂', kind: 'passive', label: 'Yüksekten düşünce kendiliğinden açılır' },
@@ -2133,7 +2133,6 @@ function drawPlay(dt) {
   drawStains();
   T.flags.forEach(drawFlag);
   drawAir();
-  if (play.phase === 'aim' && !curTeam().cpu && !play.pick) drawRuler();
   for (const c of allChars()) drawChar(c, c === ch);
   if (play.phase === 'banner' || play.phase === 'aim') {
     const bob = Math.sin(time * 6) * 3;
@@ -2159,15 +2158,23 @@ function drawPlay(dt) {
 function drawRuler() {
   const T = play.T, pk = play.pick, strong = pk && (pk.type === 'pos' || pk.type === 'range');
   const u0 = Math.max(0, unitOf(cam.x)), u1 = Math.min(T.maxUnit, unitOf(cam.x + W));
+  // karakterlerin durduğu sayılar takım renginde; ayaklarından cetvele kesik çizgi iner
+  const at = {};
+  for (const c of allChars()) if (alive(c)) {
+    const u = clamp(unitOf(c.x), 0, T.maxUnit); at[u] = at[u] || c;
+    ctx.setLineDash([4, 5]); ctx.strokeStyle = c.color; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(c.x, c.y + 2); ctx.lineTo(unitX(u), H - 26); ctx.stroke(); ctx.setLineDash([]);
+  }
   for (let u = u0; u <= u1; u++) {
     const x = unitX(u), y = H - 14;
     let on = false;
     if (pk && pk.type === 'pos') on = u === pk.val;
     if (pk && pk.type === 'range') on = u >= Math.min(pk.val, pk.val2) && u <= Math.max(pk.val, pk.val2);
     ctx.globalAlpha = strong ? 1 : .7;
-    rr(ctx, x - 15, y - 11, 30, 22, 8); ctx.fillStyle = on ? '#FFD23F' : 'rgba(255,255,255,.88)'; ctx.fill();
-    ctx.strokeStyle = INK; ctx.lineWidth = on ? 2.5 : 1.2; ctx.stroke();
-    text(String(u), x, y, 15, { color: INK, stroke: null });
+    const who = at[u];
+    rr(ctx, x - 15, y - 11, 30, 22, 8); ctx.fillStyle = on ? '#FFD23F' : who ? who.color : 'rgba(255,255,255,.88)'; ctx.fill();
+    ctx.strokeStyle = INK; ctx.lineWidth = on || who ? 2.5 : 1.2; ctx.stroke();
+    text(String(u), x, y, 15, { color: who && !on ? '#FFFFFF' : INK, stroke: null });
     ctx.globalAlpha = 1;
     if (on && pk.type === 'pos') {
       const ok = pickValid(pk);
@@ -2358,8 +2365,7 @@ function drawPicker() {
   const sy = y + 54;
   if (pk.type === 'count') {
     const p = it.pick;
-    stepper(x + 70, sy, 170, '', pk.val, p.min, p.max, v => { pk.val = v; });
-    [[-1, x + 254], [1, x + 304]].forEach(([d, bx]) => button(bx, sy + 3, 44, 44, () => { pk.dir = d; }, (qx, qy, qw, qh) => centerSprite('play', qx + qw / 2, qy + qh / 2, 2.6, { flip: d < 0, outline: false }), { frame: pk.dir === d ? '#5DBB4A' : '#B9C6D6' }));
+    stepper(x + 110, sy, 220, '', pk.val, p.min, p.max, v => { pk.val = v; });
   } else if (pk.type === 'pos') {
     stepper(x + 90, sy, 220, '', pk.val, 0, T.maxUnit, v => { pk.val = v; cam.manual = true; cam.tx = unitX(v) - W / 2; });
   } else if (pk.type === 'range') {
