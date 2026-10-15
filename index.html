@@ -19,20 +19,53 @@
 <main id="app">
   <section id="home" class="screen active">
     <header class="top">
-      <h1>Sayı Bahçesi</h1>
+      <h1 class="home-title">Sayı Bahçesi</h1>
       <div class="tools">
-        <div class="pill" aria-label="Toplam yıldız"><span class="star">★</span> <span id="starsTotal">0</span></div>
-        <div class="pill" aria-label="Altın">🪙 <span id="coinsTotal">0</span></div>
-        <button class="icon-btn" id="parentBtn" aria-label="Ebeveyn paneli">⚙️</button>
-        <button class="icon-btn" id="soundBtn" aria-label="Sesi aç / kapat">🔊</button>
+        <button class="icon-btn tasks-icon" id="tasksBtn" aria-label="Görevlerim">📋<span class="badge" id="taskBadge" hidden>0</span></button>
+        <button class="icon-btn soft" id="settingsBtn" aria-label="Ayarlar">⚙️</button>
       </div>
     </header>
-    <div class="levels" role="radiogroup" aria-label="Zorluk">
-      <button class="level" data-level="1" role="radio"><span>🐣</span><b>Kolay</b><small>0–5</small></button>
-      <button class="level" data-level="2" role="radio"><span>🐥</span><b>Orta</b><small>0–10</small></button>
-      <button class="level" data-level="3" role="radio"><span>🦉</span><b>Zor</b><small>0–20</small></button>
+    <div class="home-body">
+      <button class="hero" id="playBtn">
+        <span class="hero-k">Sıradaki tur · 10 soru</span>
+        <span class="hero-row">
+          <span class="hero-main"><b>Oyna</b><span id="playWhat"></span></span>
+          <span class="hero-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8.5 5.8v12.4c0 .8.9 1.3 1.6.9l9.4-6.2c.6-.4.6-1.4 0-1.8L10.1 4.9c-.7-.4-1.6.1-1.6.9z"/></svg></span>
+        </span>
+        <span class="hero-loot"><span>Bitirince:</span><span class="chip" id="lootTicket"></span><span class="chip" id="lootCoins"></span></span>
+      </button>
+      <div class="home-side">
+        <div class="rewards">
+          <button class="reward" id="warBtn" style="--c:#E5483B;--bg:#FDE7E5"><span class="r-ico">⚔️</span><span class="r-lbl">Savaş</span><span class="r-sub" id="warSub"></span></button>
+          <button class="reward" id="gardenBtn" style="--c:#34C17B;--bg:#E1F6EA"><span class="tag" id="gardenDot" hidden>yeni</span><span class="r-ico">🌻</span><span class="r-lbl">Bahçem</span><span class="r-sub" id="gardenSub"></span></button>
+          <button class="reward" id="shopBtn" style="--c:#F5A524;--bg:#FEF1DA"><span class="r-ico">🛒</span><span class="r-lbl">Dükkân</span><span class="r-sub" id="shopSub"></span></button>
+        </div>
+        <div class="cats">
+          <button class="cat" data-g="num" style="--c:#3FA9F5;--bg:#E3F2FD"><span class="c-ico">2+3</span><span class="c-txt"><b>Sayılar</b><small>Toplama, çıkarma, dizi, boşluk</small><span class="c-prog"><span class="c-bar"><i></i></span><em></em></span></span><span class="chev" aria-hidden="true">›</span></button>
+          <button class="cat" data-g="shape" style="--c:#9B6BEF;--bg:#F0E8FD"><span class="c-ico">🔺🔵</span><span class="c-txt"><b>Şekiller</b><small>Örüntü, ayna, farklı olan, sudoku</small><span class="c-prog"><span class="c-bar"><i></i></span><em></em></span></span><span class="chev" aria-hidden="true">›</span></button>
+        </div>
+      </div>
     </div>
-    <div class="modes" id="modes"></div>
+  </section>
+
+  <section id="cat" class="screen">
+    <header class="top">
+      <button class="icon-btn back" aria-label="Ana sayfa">‹</button>
+      <h1 id="catTitle">Sayılar</h1>
+      <span class="top-spacer"></span>
+    </header>
+    <div class="cat-body">
+      <div class="lv-box">
+        <span class="lv-k">Zorluk</span>
+        <div class="levels" role="radiogroup" aria-label="Zorluk">
+          <button class="level" data-level="1" role="radio"><b>Kolay</b><small>0–5</small><span class="lv-dots"><i></i></span></button>
+          <button class="level" data-level="2" role="radio"><b>Orta</b><small>0–10</small><span class="lv-dots"><i></i><i></i></span></button>
+          <button class="level" data-level="3" role="radio"><b>Zor</b><small>0–20</small><span class="lv-dots"><i></i><i></i><i></i></span></button>
+        </div>
+      </div>
+      <div class="mode-grid" id="catGrid"></div>
+      <p class="cat-note">Her tur 10 soru. Bitirince 1 bilet ve yıldız başına 2 altın.</p>
+    </div>
   </section>
 
   <section id="play" class="screen">

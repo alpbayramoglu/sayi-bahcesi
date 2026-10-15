@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 12;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v12)
+const VERSION = 13;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v13)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -423,50 +423,64 @@ function show(name) {
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('active', s.id === name);
 }
 
+const LEVEL_NAME = { 1: 'Kolay', 2: 'Orta', 3: 'Zor' };
+const bestOf = (k, l = lv()) => Store.d.best[`${k}-${l}`] || 0;
+// "Oyna": en son oynanan alıştırma; hiç oynanmamışsa bu seviyede en az yıldızı olan
+function nextMode() {
+  if (Store.d.lastMode && modeOf(Store.d.lastMode)) return Store.d.lastMode;
+  return MODES.slice().sort((a, b) => bestOf(a.key) - bestOf(b.key))[0].key;
+}
 function renderHome() {
-  $('starsTotal').textContent = Store.d.stars;
-  $('soundBtn').textContent = Store.d.sound ? '🔊' : '🔇';
+  const m = modeOf(nextMode());
+  $('playWhat').textContent = `${m.label} · ${LEVEL_NAME[lv()]}`;
+  const full = Store.d.tickets >= TICKET_MAX;
+  $('lootTicket').textContent = full ? `🎟️ ${TICKET_MAX}/${TICKET_MAX} dolu` : '🎟️ 1 bilet';
+  const maxCoins = 6 + (lv() === 3 ? 2 : 0) + (bestOf(m.key) < 3 ? 1 : 0);
+  $('lootCoins').textContent = `🪙 ${maxCoins} altına kadar`;
+  $('warSub').textContent = Store.d.tickets > 0 ? `🎟️ ${Store.d.tickets} bilet` : '🎟️ yok';
+  $('warBtn').classList.toggle('empty', !(Store.d.tickets > 0));
+  $('gardenSub').textContent = `★ ${Store.d.stars}`;
+  $('gardenDot').hidden = !(friendsFor(Store.d.stars) > Store.d.seen);
+  $('shopSub').textContent = `🪙 ${Store.d.coins}`;
+  const doable = Store.d.tasks.filter(t => taskState(t) === 'open').length;
+  $('taskBadge').hidden = !doable; $('taskBadge').textContent = doable;
+  for (const c of document.querySelectorAll('.cat')) {
+    const list = MODES.filter(x => x.g === c.dataset.g), got = list.reduce((n, x) => n + bestOf(x.key), 0), max = list.length * 3;
+    c.querySelector('.c-bar i').style.width = (got / max * 100) + '%';
+    c.querySelector('em').textContent = `${got}/${max} ★`;
+  }
+}
+// Alıştırma sayfası: zorluk + o gruptaki alıştırmalar
+let catGroup = 'num';
+function renderCat() {
+  $('catTitle').textContent = GROUPS.find(([g]) => g === catGroup)[1];
   for (const b of document.querySelectorAll('.level')) {
     const on = +b.dataset.level === lv();
     b.classList.toggle('on', on); b.setAttribute('aria-checked', on);
   }
-  $('coinsTotal').textContent = Store.d.coins;
-  const box = $('modes'); box.innerHTML = '';
-  box.append(hubGroup());
-  for (const [g, title] of GROUPS) {
-    const sec = el('section', 'mode-group'), grid = el('div', 'mode-grid');
-    sec.append(el('h2', 'group-title', title), grid);
-    for (const m of MODES.filter(x => x.g === g)) {
-      const b = el('button', 'mode'); b.style.setProperty('--c', m.c);
-      b.append(el('span', 'ico', m.ico), el('span', 'lbl', m.label));
-      const best = Store.d.best[`${m.key}-${lv()}`] || 0, st = el('span', 'best');
-      for (let i = 0; i < 3; i++) st.append(el('span', i < best ? 'on' : '', '★'));
-      b.append(st);
-      b.onclick = () => { Sound.play('tap'); startRound(m.key); };
-      grid.append(b);
-    }
-    box.append(sec);
-  }
-}
-
-// Oyun grubu: savaş, dükkân, görevler, bahçe
-function hubGroup() {
-  const sec = el('section', 'mode-group'), grid = el('div', 'mode-grid');
-  sec.append(el('h2', 'group-title', 'Oyun'), grid);
-  const tile = (id, ico, label, c, sub, fn, dot) => {
-    const b = el('button', 'mode hub'); b.id = id; b.style.setProperty('--c', c);
-    b.append(el('span', 'ico', ico), el('span', 'lbl', label), el('span', 'sub', sub));
-    const d = el('span', 'dot' + (dot ? ' on' : '')); if (id === 'gardenBtn') d.id = 'gardenDot';
-    b.append(d);
-    b.onclick = () => { Sound.play('tap'); fn(); };
+  const grid = $('catGrid'); grid.innerHTML = '';
+  const list = MODES.filter(x => x.g === catGroup);
+  list.forEach((m, i) => {
+    const b = el('button', 'mode' + (list.length % 2 && i === list.length - 1 ? ' wide' : '')); b.style.setProperty('--c', m.c);
+    b.append(el('span', 'ico', m.ico), el('span', 'lbl', m.label));
+    const best = bestOf(m.key), st = el('span', 'best');
+    for (let k = 0; k < 3; k++) st.append(el('span', k < best ? 'on' : '', '★'));
+    b.append(st);
+    b.onclick = () => { Sound.play('tap'); startRound(m.key); };
     grid.append(b);
-  };
-  const doable = Store.d.tasks.filter(t => taskState(t) === 'open').length;
-  tile('warBtn', '⚔️', 'Kartopu Savaşı', '#E5483B', `🎟️ ${Store.d.tickets}`, goWar, Store.d.tickets > 0);
-  tile('shopBtn', '🛒', 'Dükkân', '#F5A524', `🪙 ${Store.d.coins}`, () => { show('shop'); renderShop(); });
-  tile('tasksBtn', '📋', 'Görevlerim', '#3FA9F5', doable ? `✋ ${doable}` : '✓', () => { show('tasks'); renderTasks(); }, doable > 0);
-  tile('gardenBtn', '🌻', 'Bahçem', '#34C17B', `★ ${Store.d.stars}`, () => { show('garden'); renderGarden(); }, friendsFor(Store.d.stars) > Store.d.seen);
-  return sec;
+  });
+}
+function openSettings() {
+  modal((c, close) => {
+    c.classList.add('settings');
+    c.append(el('h2', '', 'Ayarlar'));
+    const snd = el('button', 'big-btn alt', Store.d.sound ? '🔊 Ses açık' : '🔇 Ses kapalı');
+    snd.onclick = () => { Store.d.sound = !Store.d.sound; Store.save(); if (!Store.d.sound) Voice.stop(); snd.textContent = Store.d.sound ? '🔊 Ses açık' : '🔇 Ses kapalı'; Sound.play('tap'); };
+    const par = el('button', 'big-btn alt', '🔒 Ebeveyn paneli');
+    par.onclick = () => { close(); Sound.play('tap'); parentGate(() => { draft = null; show('parent'); renderParent(); }); };
+    const ok = el('button', 'big-btn', 'Tamam'); ok.onclick = close;
+    c.append(snd, par, ok);
+  });
 }
 function goWar() {
   if (Store.d.tickets > 0) { location.href = 'savas/'; return; }
@@ -786,7 +800,7 @@ function modal(build) {
 /* ----- Tur ----- */
 function startRound(m) {
   clearTimeout(nextTimer); Voice.stop();
-  mode = m;
+  mode = m; Store.d.lastMode = m; Store.save();
   round = { i: 0, score: 0, results: [], repeats: [], recent: [], streak: 0 };
   document.documentElement.style.setProperty('--c', modeOf(m).c);
   show('play');
@@ -1115,14 +1129,19 @@ function confetti(n = 18) {
 }
 
 /* ================= Olaylar ================= */
-for (const b of document.querySelectorAll('.level')) b.onclick = () => { Sound.play('tap'); Store.d.level = +b.dataset.level; Store.save(); renderHome(); };
-$('soundBtn').onclick = () => { Store.d.sound = !Store.d.sound; Store.save(); if (!Store.d.sound) Voice.stop(); renderHome(); };
+for (const b of document.querySelectorAll('.level')) b.onclick = () => { Sound.play('tap'); Store.d.level = +b.dataset.level; Store.save(); renderCat(); };
+$('playBtn').onclick = () => { Sound.play('tap'); startRound(nextMode()); };
+$('warBtn').onclick = () => { Sound.play('tap'); goWar(); };
+$('gardenBtn').onclick = () => { Sound.play('tap'); show('garden'); renderGarden(); };
+$('shopBtn').onclick = () => { Sound.play('tap'); show('shop'); renderShop(); };
+$('tasksBtn').onclick = () => { Sound.play('tap'); show('tasks'); renderTasks(); };
+$('settingsBtn').onclick = () => { Sound.play('tap'); openSettings(); };
+for (const c of document.querySelectorAll('.cat')) c.onclick = () => { Sound.play('tap'); catGroup = c.dataset.g; show('cat'); renderCat(); };
 const goHome = () => { clearTimeout(nextTimer); Voice.stop(); show('home'); renderHome(); setTimeout(celebrateNext, 400); };
 $('homeBtn').onclick = goHome;
 $('gardenHomeBtn').onclick = goHome;
 $('waterBtn').onclick = waterGarden;
 for (const b of document.querySelectorAll('.back')) b.onclick = goHome;
-$('parentBtn').onclick = () => { Sound.play('tap'); parentGate(() => { draft = null; show('parent'); renderParent(); }); };
 $('endHomeBtn').onclick = goHome;
 $('againBtn').onclick = () => startRound(mode);
 // 🔈: soruyu okur; şekil sorularında ipucu açıksa ipucunu da ekler.
