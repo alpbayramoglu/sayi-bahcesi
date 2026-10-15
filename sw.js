@@ -2,7 +2,7 @@
 // Bütün dosyalar tek sürüm olarak birlikte önbelleğe alınır ve hep önbellekten verilir;
 // böylece yeni index.html ile eski app.js gibi karışık bir sürüm oluşmaz.
 // Her yayında CACHE adını artır: yeni service worker bütün dosyaları birlikte yeniden indirir.
-const CACHE = 'sayi-bahcesi-v4';   // app.js içindeki VERSION ile aynı tut
+const CACHE = 'sayi-bahcesi-v5';   // app.js içindeki VERSION ile aynı tut
 importScripts('audio/clips.js');   // self.CLIPS: tools/make-audio.sh'in ürettiği ses parçaları
 const ASSETS = [
   ...self.CLIPS.map(n => `./audio/${n}.mp3`),
@@ -15,6 +15,9 @@ const ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './fonts/baloo2-800.woff',
+  './savas/',
+  './savas/index.html',
+  './savas/game.js',
 ];
 
 self.addEventListener('install', e => {

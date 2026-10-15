@@ -22,7 +22,8 @@
       <h1>Sayı Bahçesi</h1>
       <div class="tools">
         <div class="pill" aria-label="Toplam yıldız"><span class="star">★</span> <span id="starsTotal">0</span></div>
-        <button class="icon-btn garden-btn" id="gardenBtn" aria-label="Bahçem">🌻<span class="dot" id="gardenDot"></span></button>
+        <div class="pill" aria-label="Altın">🪙 <span id="coinsTotal">0</span></div>
+        <button class="icon-btn" id="parentBtn" aria-label="Ebeveyn paneli">⚙️</button>
         <button class="icon-btn" id="soundBtn" aria-label="Sesi aç / kapat">🔊</button>
       </div>
     </header>
@@ -64,11 +65,39 @@
     </div>
   </section>
 
+  <section id="shop" class="screen">
+    <header class="top">
+      <button class="icon-btn back" aria-label="Ana sayfa">🏠</button>
+      <h1>Dükkân</h1>
+      <div class="pill" aria-label="Altın">🪙 <span id="shopCoins">0</span></div>
+    </header>
+    <div class="shop-grid" id="shopGrid"></div>
+  </section>
+
+  <section id="tasks" class="screen">
+    <header class="top">
+      <button class="icon-btn back" aria-label="Ana sayfa">🏠</button>
+      <h1>Görevlerim</h1>
+      <div class="pill" aria-label="Bilet">🎟️ <span id="tasksTickets">0</span></div>
+    </header>
+    <div class="task-list" id="taskList"></div>
+  </section>
+
+  <section id="parent" class="screen">
+    <header class="top">
+      <button class="icon-btn back" aria-label="Ana sayfa">🏠</button>
+      <h1>Ebeveyn</h1>
+      <span></span>
+    </header>
+    <div class="parent-body" id="parentBody"></div>
+  </section>
+
   <section id="end" class="screen">
     <div class="end-card">
       <div class="end-stars" id="endStars"></div>
       <h2 id="endTitle"></h2>
       <p id="endText"></p>
+      <div class="end-loot" id="endLoot"></div>
       <div class="end-new" id="endNew" hidden></div>
       <div class="end-actions">
         <button class="big-btn" id="againBtn">🔁 Tekrar</button>
@@ -77,6 +106,7 @@
     </div>
   </section>
 </main>
+<div id="modal" class="modal" hidden><div class="modal-card" id="modalCard"></div></div>
 <div id="ver" class="ver" aria-hidden="true"></div>
 <div id="cheer" class="cheer"></div>
 <div id="confetti"></div>
