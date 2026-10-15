@@ -2216,9 +2216,25 @@ function drawAim(ch) {
       ctx.restore();
     }
   }
-  const sp = Math.hypot(vx, vy) || 1;
-  const bx = hx - vx / sp * pull * 48, by = hy - vy / sp * pull * 48;
-  ctx.strokeStyle = '#8A5D39'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  const sp = Math.hypot(vx, vy) || 1, ux = vx / sp, uy = vy / sp;
+  const bx = hx - ux * pull * 48, by = hy - uy * pull * 48;
+  // güç: yeşil → sarı → kırmızı; tam güçte titrer ve MAX yazar
+  const hue = 120 - 120 * pull, col = `hsl(${hue},85%,50%)`, max = pull >= .999;
+  if (!team.cpu) {
+    ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(30,34,51,.35)'; ell(ctx, hx, hy, 34, 34); ctx.stroke();
+    ctx.beginPath(); ctx.arc(hx, hy, 34, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pull); ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.stroke();
+    const jit = max ? Math.sin(time * 60) * 1.5 : 0, L = 26 + 46 * pull, tx = hx + ux * L + jit, ty = hy + uy * L + jit;
+    const arrow = (w, c) => {
+      ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(hx + ux * 12, hy + uy * 12); ctx.lineTo(tx - ux * 8, ty - uy * 8); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx - ux * 14 - uy * 9, ty - uy * 14 + ux * 9); ctx.lineTo(tx - ux * 14 + uy * 9, ty - uy * 14 - ux * 9); ctx.closePath();
+      ctx.fillStyle = c; ctx.lineJoin = 'round'; ctx.fill(); ctx.stroke();
+    };
+    arrow(11, INK); arrow(6, col);
+    if (max) { text('MAX!', hx, hy - 58 + Math.sin(time * 12) * 2, 22, { color: '#FF5A4E', lw: 5 }); if (!play.maxTick) { play.maxTick = true; Sound.play('tick'); Sound.play('pop'); } }
+    else play.maxTick = false;
+  }
+  ctx.strokeStyle = team.cpu ? '#8A5D39' : col; ctx.lineWidth = 4; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(hx - 8, hy - 4); ctx.lineTo(bx, by); ctx.lineTo(hx + 8, hy - 4); ctx.stroke();
   itemIcon(team.item, bx, by, 24);
 }
@@ -2296,10 +2312,11 @@ function drawHud() {
   drawMinimap();
   const T = play.T;
   // kaydırma okları: harita ekrandan genişse
-  if (T.w > W && play.phase !== 'over' && !play.paused && !play.bag) {
-    [[-1, 4], [1, W - 48]].forEach(([dir, x]) => {
+  // nişan alırken parmak yanlışlıkla oka denk gelmesin diye üstte duruyor ve nişan sırasında gizleniyor
+  if (T.w > W && play.phase !== 'over' && !play.paused && !play.bag && !play.aim) {
+    [[-1, 12], [1, W - 56]].forEach(([dir, x]) => {
       const can = dir < 0 ? cam.x > 1 : cam.x < T.w - W - 1;
-      button(x, H / 2 - 44, 44, 72, null, (bx, by, w, h) => centerSprite('play', bx + w / 2, by + h / 2, 3, { flip: dir < 0, outline: false }),
+      button(x, 76, 44, 44, null, (bx, by, w, h) => centerSprite('play', bx + w / 2, by + h / 2, 3, { flip: dir < 0, outline: false }),
         { frame: '#B9C6D6', disabled: !can, onDown: () => { play.pan = dir; }, onUp: () => { play.pan = 0; } });
     });
   }

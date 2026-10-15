@@ -233,15 +233,47 @@ h1 { margin: 0; font-size: clamp(28px, 5vw, 42px); line-height: 1; color: #fff; 
   display: flex; flex-direction: column; justify-content: flex-end; padding: 10px;
 }
 .garden-sun { position: absolute; top: 8px; right: 18px; font-size: clamp(30px, 8vh, 48px); animation: spin 18s linear infinite; }
-.garden-grid { position: absolute; inset: 0; }
+.garden-grid { position: absolute; inset: 0; z-index: 3; }
 .friend {
-  position: absolute; transform: translate(-50%, -50%); padding: 0;
-  font-size: clamp(30px, 9vh, 46px); line-height: 1; filter: drop-shadow(0 4px 0 rgba(36, 50, 74, .12));
+  position: absolute; padding: 0; line-height: 1; font-size: clamp(30px, 9vh, 46px);
+  transform: translate(-50%, -50%) translate(var(--tx, 0), var(--ty, 0)) rotate(var(--rot, 0)) scaleX(var(--sx, 1));
+  transform-origin: 50% 90%; filter: drop-shadow(0 4px 0 rgba(36, 50, 74, .12)); transition: filter .6s;
 }
 .friend.big { font-size: clamp(44px, 14vh, 72px); }
-.friend.fly { animation: float 3.2s ease-in-out infinite; }
-.friend.wiggle { animation: wiggle .5s ease; }
-.friend.fresh { animation: pop .7s both, wiggle .6s .7s 2; }
+.friend.sky { font-size: clamp(60px, 18vh, 96px); opacity: .85; }
+.friend.pond { font-size: clamp(22px, 6vh, 30px); }
+.friend.thirsty { filter: saturate(.45) brightness(.92); --rot: 14deg !important; }
+.friend.jump { animation: gjump .55s ease; }
+.friend.fresh { animation: pop .7s both, gjump .6s .7s 2; }
+.friend.grow { animation: ggrow .9s ease; }
+@keyframes gjump { 0%, 100% { margin-top: 0; } 40% { margin-top: -26px; } 70% { margin-top: -6px; } }
+@keyframes ggrow { 0% { scale: 1; } 40% { scale: 1.4; } 70% { scale: .92; } 100% { scale: 1; } }
+.g-cloud { position: absolute; z-index: 1; width: 90px; height: 28px; border-radius: 20px; background: #fff; opacity: .9; animation: gcloud 40s linear infinite; }
+.g-cloud::before, .g-cloud::after { content: ''; position: absolute; background: #fff; border-radius: 50%; }
+.g-cloud::before { width: 40px; height: 40px; left: 14px; top: -18px; }
+.g-cloud::after { width: 30px; height: 30px; left: 46px; top: -12px; }
+.g-cloud.c1 { top: 12%; animation-duration: 46s; animation-delay: -10s; }
+.g-cloud.c2 { top: 24%; transform: scale(.7); animation-duration: 60s; animation-delay: -35s; }
+.g-cloud.c3 { top: 6%; transform: scale(.55); animation-duration: 75s; animation-delay: -55s; }
+@keyframes gcloud { from { left: -20%; } to { left: 110%; } }
+.g-hill { position: absolute; z-index: 1; border-radius: 50%; }
+.g-hill.back { left: -20%; right: -20%; top: 38%; height: 70%; background: radial-gradient(60% 50% at 30% 30%, #A8E59A, #7FCF73); }
+.g-hill.front { left: -10%; right: -30%; top: 50%; height: 70%; background: linear-gradient(#8EDB8A, #5CC46B); }
+.g-fence { position: absolute; z-index: 1; left: 0; right: 0; top: 46%; height: 18px;
+  background: repeating-linear-gradient(90deg, #FFF 0 8px, transparent 8px 22px), linear-gradient(#FFF, #FFF) 0 5px / 100% 3px no-repeat, linear-gradient(#FFF, #FFF) 0 12px / 100% 3px no-repeat; opacity: .9; }
+.g-pond { position: absolute; z-index: 2; left: 6%; top: 80%; width: 26%; height: 14%; border-radius: 50%; background: radial-gradient(70% 60% at 40% 35%, #8FD3FA, #3FA9F5); box-shadow: inset 0 -4px 0 rgba(36, 50, 74, .15); }
+.g-rain { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+.g-rain i { position: absolute; top: -10%; width: 3px; height: 14px; border-radius: 2px; background: #7CC4F5; animation: grain .8s linear forwards; }
+@keyframes grain { to { top: 105%; } }
+.g-water { position: absolute; z-index: 200; right: 12px; bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.g-streak { background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 18px; box-shadow: var(--lift); }
+.g-streak:empty { display: none; }
+.g-water-btn { width: 78px; height: 78px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #BFE6FF, #3FA9F5); box-shadow: 0 6px 0 #2378B8, 0 10px 20px rgba(36, 50, 74, .2); font-size: 30px; line-height: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; animation: pulse 1.6s ease-in-out infinite; }
+.g-water-btn b { font-size: 16px; }
+.g-water-btn.done { background: #E3E8F0; color: var(--muted); box-shadow: 0 6px 0 #CFD9E6; animation: none; }
+.g-bubble { position: absolute; z-index: 300; transform: translate(-50%, -100%); background: #fff; border-radius: 14px; padding: 4px 12px; font-size: 18px; box-shadow: var(--lift); white-space: nowrap; animation: fadeIn .2s; pointer-events: none; }
+.g-banner { position: absolute; z-index: 300; left: 50%; top: 22%; transform: translateX(-50%); background: #fff; border-radius: 20px; padding: 8px 20px; font-size: 24px; box-shadow: var(--lift); animation: pop .5s; white-space: nowrap; }
+.garden-sun { z-index: 1; }
 .garden-next .shadow { filter: brightness(0) opacity(.3); font-size: 22px; }
 @keyframes float { 0%, 100% { margin-top: 0; } 50% { margin-top: -10px; } }
 .garden-next { position: absolute; z-index: 200; top: 10px; left: 12px; background: #fff; border-radius: 999px; padding: 4px 16px; font-size: 18px; box-shadow: var(--lift); display: flex; align-items: center; gap: 10px; }
@@ -349,3 +381,10 @@ input.p-input, textarea.p-input { -webkit-user-select: text; user-select: text; 
 .shop-card { position: relative; }
 .shop-badge { position: absolute; top: 8px; right: 10px; font-size: 18px; }
 .shop-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.shop-info-btn { position: absolute; top: 8px; left: 10px; width: 30px; height: 30px; border-radius: 50%; background: #EAF6FF; color: var(--blue); font: 800 18px Georgia, serif; font-style: italic; box-shadow: inset 0 0 0 2px var(--blue); }
+.modal-card.info { text-align: left; max-width: 460px; }
+.modal-card.info .modal-ico, .modal-card.info h2 { text-align: center; }
+.modal-card.info .big-btn { display: block; margin: 12px auto 0; }
+.info-row { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; font-size: 18px; line-height: 1.3; }
+.info-ico { font-size: 22px; flex: 0 0 auto; }
+@media (max-height: 520px) { .modal-card.info .modal-ico { font-size: 40px; } .info-row { font-size: 16px; margin: 5px 0; } }

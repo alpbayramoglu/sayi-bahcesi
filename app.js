@@ -7,6 +7,7 @@
 
 const $ = id => document.getElementById(id);
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const rand = (a, b) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
@@ -18,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 8;          // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v8)
+const VERSION = 9;          // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v9)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -42,28 +43,28 @@ const TICKET_MAX = 3;
 // Savaş eşyaları (anahtarlar savas/game.js içindeki ITEMS ile aynı). num: sayı seçerek kullanılır.
 const SHOP_GROUPS = [['throw', 'Atılanlar'], ['num', 'Sayılı'], ['def', 'Savunma']];
 const SHOP = [
-  { key: 'balloon', g: 'throw', ico: '💦', name: 'Su Balonu', info: 'Büyük patlar', price: 2 },
-  { key: 'paint', g: 'throw', ico: '🎨', name: 'Boya Küpü', info: 'Zıplar, boyar', price: 3 },
-  { key: 'fish', g: 'throw', ico: '🐟', name: 'Balık', info: 'Dümdüz uçar', price: 4 },
-  { key: 'bigball', g: 'throw', ico: '⚪', name: 'Dev Kartopu', info: 'Ağır, kocaman çukur', price: 3 },
-  { key: 'bouncy', g: 'throw', ico: '🥎', name: 'Zıp Zıp Top', info: 'Üç kez seker', price: 3 },
-  { key: 'melon', g: 'throw', ico: '🍉', name: 'Karpuz', info: 'Dört dilime ayrılır', price: 5 },
-  { key: 'boomerang', g: 'throw', ico: '🪃', name: 'Bumerang', info: 'Geri döner', price: 4 },
-  { key: 'cake', g: 'throw', ico: '🎂', name: 'Pasta', info: 'Rakip bir tur yürüyemez', price: 4 },
-  { key: 'tickle', g: 'throw', ico: '🪶', name: 'Gıdıklama Tüyü', info: 'Hihi! Rakibi kaydırır', price: 2 },
-  { key: 'pepper', g: 'throw', ico: '🌶️', name: 'Hapşırık Biberi', info: 'Rakibi uçurur', price: 4 },
-  { key: 'clock', g: 'num', ico: '⏰', name: 'Çalar Saat', info: 'Kaç saniye sonra?', price: 4 },
-  { key: 'frog', g: 'num', ico: '🐸', name: 'Zıp Zıp Kurbağa', info: 'Kaç kere zıplasın?', price: 5 },
-  { key: 'chicken', g: 'num', ico: '🐔', name: 'Koşan Tavuk', info: 'Kaç adım koşsun?', price: 5 },
-  { key: 'bugs', g: 'num', ico: '🐞', name: 'Böcek Uçağı', info: 'Sayıyı seç, rüzgârı ekle', price: 8 },
-  { key: 'meteor', g: 'num', ico: '☄️', name: 'Meteor Yağmuru', info: 'Bu sayıdan şu sayıya', price: 10 },
-  { key: 'teleport', g: 'num', ico: '✨', name: 'Işınlanma', info: 'Bir sayıya ışınlan', price: 6 },
-  { key: 'flyballoon', g: 'num', ico: '🎈', name: 'Uçan Balon', info: 'Rüzgârla uç', price: 5 },
-  { key: 'wall', g: 'num', ico: '🧱', name: 'Kardan Duvar', info: 'Kaç blok yüksek?', price: 3 },
-  { key: 'bridge', g: 'num', ico: '🌉', name: 'Sayı Köprüsü', info: 'Kaç blok uzun?', price: 4 },
-  { key: 'umbrella', g: 'def', ico: '☂️', name: 'Şemsiye', info: 'Bir tur kalkan', price: 5 },
-  { key: 'chute', g: 'def', ico: '🪂', name: 'Paraşüt', info: 'Düşerken açılır', price: 3 },
-  { key: 'potion', g: 'def', ico: '🧪', name: 'Kalp İksiri', info: '+1 kalp', price: 12 },
+  { key: 'balloon', desc: "Patlayınca her yer su olur. Çarptığı yerde büyük bir çukur açar, rakibi ıslatır.", how: "Çantadan seç, parmağını geri çek, bırak.", tip: "Rüzgârdan çok etkilenir: rüzgâr okuna bak!", g: 'throw', ico: '💦', name: 'Su Balonu', info: 'Büyük patlar', price: 2 },
+  { key: 'paint', desc: "Yere çarpınca bir kez zıplar, sonra patlar ve etrafı pembeye boyar.", how: "Çantadan seç, geri çek, bırak.", tip: "Zıpladığı için rakibin biraz önüne nişan al.", g: 'throw', ico: '🎨', name: 'Boya Küpü', info: 'Zıplar, boyar', price: 3 },
+  { key: 'fish', desc: "Çok hafif uçar, neredeyse dümdüz gider. Uzaktaki rakibe yetişir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu pek itemez.", g: 'throw', ico: '🐟', name: 'Balık', info: 'Dümdüz uçar', price: 4 },
+  { key: 'bigball', desc: "Kocaman ve ağır bir kartopu. Kısa gider ama büyük bir çukur açar, rakibin başı döner.", how: "Çantadan seç, güçlü çek, bırak.", tip: "Ağır olduğu için yakındaki rakibe at.", g: 'throw', ico: '⚪', name: 'Dev Kartopu', info: 'Ağır, kocaman çukur', price: 3 },
+  { key: 'bouncy', desc: "Üç kez seker, sonra rengârenk patlar.", how: "Çantadan seç, geri çek, bırak.", tip: "Duvarın arkasındaki rakibe sektirerek ulaşabilirsin.", g: 'throw', ico: '🥎', name: 'Zıp Zıp Top', info: 'Üç kez seker', price: 3 },
+  { key: 'melon', desc: "Çarpınca dört dilime ayrılır, her dilim ayrıca patlar.", how: "Çantadan seç, geri çek, bırak.", tip: "Rakibin tam üstüne düşerse dilimler etrafa saçılır.", g: 'throw', ico: '🍉', name: 'Karpuz', info: 'Dört dilime ayrılır', price: 5 },
+  { key: 'boomerang', desc: "Uçar uçar, sonra geri döner. Arkadaki rakibi bile vurabilir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu çok iter.", g: 'throw', ico: '🪃', name: 'Bumerang', info: 'Geri döner', price: 4 },
+  { key: 'cake', desc: "Rakibin yüzüne krema yapışır. Bir sonraki turunda yürüyemez!", how: "Çantadan seç, geri çek, bırak.", tip: "Kaçmaya çalışan rakibe at.", g: 'throw', ico: '🎂', name: 'Pasta', info: 'Rakip bir tur yürüyemez', price: 4 },
+  { key: 'tickle', desc: "Hiç acıtmaz, sadece gıdıklar. Rakip gülmekten kayar.", how: "Çantadan seç, geri çek, bırak.", tip: "Uçurumun kenarındaki rakibi suya kaydırabilir!", g: 'throw', ico: '🪶', name: 'Gıdıklama Tüyü', info: 'Hihi! Rakibi kaydırır', price: 2 },
+  { key: 'pepper', desc: "Rakip biberin tozunu yutar, önce \"ha... ha...\" der, sonra HAPŞU! diye geriye uçar.", how: "Çantadan seç, geri çek, bırak.", tip: "Suya yakın rakibe at.", g: 'throw', ico: '🌶️', name: 'Hapşırık Biberi', info: 'Rakibi uçurur', price: 4 },
+  { key: 'clock', desc: "Çalar saati sen kurarsın: kaç saniye sonra çalacağını seçersin. Seker, yuvarlanır, zamanı gelince çalar.", how: "Çantadan seç, ⏰ ile saniyeyi ayarla, geri çek, bırak.", tip: "Rakibin yanına yuvarlanması için az güçle at.", g: 'num', ico: '⏰', name: 'Çalar Saat', info: 'Kaç saniye sonra?', price: 4 },
+  { key: 'frog', desc: "Kurbağa rakibe doğru zıplar. Kaç kere zıplayacağını sen seçersin; her zıplama cetvelde bir sayı.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Cetvelde senin sayından kedinin sayısına kaç tane var, say!", g: 'num', ico: '🐸', name: 'Zıp Zıp Kurbağa', info: 'Kaç kere zıplasın?', price: 5 },
+  { key: 'chicken', desc: "Tavuk rakibe doğru koşar. Kaç adım koşacağını sen seçersin; her adım cetvelde bir sayı.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Yüksek duvar görürse orada patlar.", g: 'num', ico: '🐔', name: 'Koşan Tavuk', info: 'Kaç adım koşsun?', price: 5 },
+  { key: 'bugs', desc: "Uçak, seçtiğin sayının üstünden uğur böcekleri bırakır. Rüzgâr böcekleri iter!", how: "Çantadan seç, cetvelden sayıyı seç, TAMAM.", tip: "Rüzgâr +2 ise böcekler 2 sağa kayar. Kedi 9’daysa 7’yi seç!", g: 'num', ico: '🐞', name: 'Böcek Uçağı', info: 'Sayıyı seç, rüzgârı ekle', price: 8 },
+  { key: 'meteor', desc: "Gökten taşlar yağar. İki sayı seçersin, aradaki her sayıya bir taş düşer.", how: "Çantadan seç, iki sayıyı ayarla, TAMAM.", tip: "En fazla 5 sayılık bir aralık seçebilirsin.", g: 'num', ico: '☄️', name: 'Meteor Yağmuru', info: 'Bu sayıdan şu sayıya', price: 10 },
+  { key: 'teleport', desc: "Pıt! diye seçtiğin sayıya ışınlanırsın.", how: "Çantadan seç, cetvelden sayıyı seç, TAMAM.", tip: "Suyun üstüne ışınlanamazsın.", g: 'num', ico: '✨', name: 'Işınlanma', info: 'Bir sayıya ışınlan', price: 6 },
+  { key: 'flyballoon', desc: "Balon seni havaya kaldırır ve seçtiğin sayıya götürür. Ama rüzgâr seni biraz daha iter!", how: "Çantadan seç, sayıyı seç, TAMAM.", tip: "Rüzgâr −1 ise 1 sola inersin. Hesapla!", g: 'num', ico: '🎈', name: 'Uçan Balon', info: 'Rüzgârla uç', price: 5 },
+  { key: 'wall', desc: "Önüne kardan bir duvar örer. Kaç blok yüksek olacağını sen seçersin.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Duvarın arkasına saklan, kartoplar çarpsın.", g: 'num', ico: '🧱', name: 'Kardan Duvar', info: 'Kaç blok yüksek?', price: 3 },
+  { key: 'bridge', desc: "Önüne tahtadan bir köprü kurar. Kaç blok uzun olacağını sen seçersin.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Suyun üstünden geçmek için köprü kur, sonra yürü.", g: 'num', ico: '🌉', name: 'Sayı Köprüsü', info: 'Kaç blok uzun?', price: 4 },
+  { key: 'umbrella', desc: "Bir tur boyunca seni korur. İlk isabet şemsiyeye çarpar.", how: "Çantadan seç, KULLAN.", tip: "Kalbin azaldıysa kullan.", g: 'def', ico: '☂️', name: 'Şemsiye', info: 'Bir tur kalkan', price: 5 },
+  { key: 'chute', desc: "Yüksekten düşerken kendiliğinden açılır, yavaşça inersin.", how: "Çantanda olması yeter, kendisi çalışır.", tip: "Kale ve gemilerde çok işe yarar.", g: 'def', ico: '🪂', name: 'Paraşüt', info: 'Düşerken açılır', price: 3 },
+  { key: 'potion', desc: "Bir kalbini geri getirir. Turun bitmez, sonra atış da yapabilirsin.", how: "Çantadan seç, KULLAN.", tip: "Kalplerin doluysa kullanılamaz.", g: 'def', ico: '🧪', name: 'Kalp İksiri', info: '+1 kalp', price: 12 },
 ];
 const friendsFor = stars => Math.min(FRIENDS.length, Math.floor(stars / STARS_PER_FRIEND) + 1);
 const FLIERS = ['🐝', '🦋', '🐦', '🌈', '🎈'], BIG = ['🌳', '🏡', '🌈'];
@@ -485,6 +486,9 @@ function renderShop() {
       const card = el('div', 'shop-card'), have = Store.d.inv[it.key] || 0, poor = Store.d.coins < it.price;
       card.append(el('div', 'shop-ico', it.ico), el('div', 'shop-name', it.name), el('div', 'shop-info', it.info), el('div', 'shop-have', `🎒 ${have}`));
       if (grp === 'num') card.append(el('span', 'shop-badge', '🔢'));
+      const info = el('button', 'shop-info-btn', 'i'); info.setAttribute('aria-label', it.name + ' nedir?');
+      info.onclick = () => { Sound.play('tap'); shopInfo(it); };
+      card.append(info);
       const buy = el('button', 'big-btn buy' + (poor ? ' poor' : ''), `🪙 ${it.price}`);
       buy.setAttribute('aria-label', `${it.name} al, ${it.price} altın`);
       buy.onclick = () => {
@@ -499,6 +503,17 @@ function renderShop() {
       g.append(card);
     }
   }
+}
+
+// Eşya bilgisi: ne yapar, nasıl kullanılır, ipucu
+function shopInfo(it) {
+  modal((c, close) => {
+    c.classList.add('info');
+    c.append(el('div', 'modal-ico', it.ico), el('h2', '', it.name));
+    const row = (ico, txt) => { const r = el('div', 'info-row'); r.append(el('span', 'info-ico', ico), el('span', '', txt)); return r; };
+    c.append(row('✨', it.desc), row('👆', it.how), row('💡', it.tip));
+    const ok = el('button', 'big-btn', 'Tamam'); ok.onclick = close; c.append(ok);
+  });
 }
 
 /* ----- Görevler (ebeveyn ekler, çocuk "Yaptım!" der, ebeveyn onaylar) ----- */
@@ -972,22 +987,53 @@ function finish() {
 }
 
 /* ----- Bahçe ----- */
+// Bahçe canlı bir sahne: hayvanlar yürür/zıplar/uçar, çiçekler sallanır. Günde bir kez sulanır.
+const G_KIND = {
+  '🐞': 'walk', '🦊': 'walk', '🐥': 'walk', '🐑': 'walk', '🦄': 'walk', '🦔': 'walk', '🐌': 'slow', '🐢': 'slow',
+  '🐇': 'hop', '🐿️': 'hop', '🐸': 'hop', '🐝': 'fly', '🦋': 'fly', '🐦': 'fly', '🦉': 'fly', '🎈': 'float',
+  '🌈': 'sky', '🐠': 'pond', '🏡': 'house',
+};
+const G_NAME = {
+  '🌱': 'Filiz', '🌷': 'Lale', '🌼': 'Papatya', '🐞': 'Uğur Böceği', '🌻': 'Ayçiçeği', '🐝': 'Arı', '🍄': 'Mantar', '🦋': 'Kelebek',
+  '🌳': 'Ağaç', '🐌': 'Salyangoz', '🐦': 'Kuş', '🌸': 'Kiraz Çiçeği', '🐇': 'Tavşan', '🍓': 'Çilek', '🦔': 'Kirpi', '🐢': 'Kaplumbağa',
+  '🌈': 'Gökkuşağı', '🐿️': 'Sincap', '🐸': 'Kurbağa', '🌺': 'Ebegümeci', '🦊': 'Tilki', '🐥': 'Civciv', '🦉': 'Baykuş', '🍎': 'Elma',
+  '🐑': 'Kuzu', '🦄': 'Tek Boynuzlu At', '🌵': 'Kaktüs', '🐠': 'Balık', '🎈': 'Balon', '🏡': 'Ev',
+};
+let gardenRaf = 0, gardenEnts = [];
+const gardenData = () => (Store.d.garden = Store.d.garden || { last: null, streak: 0 });
+const daysSince = k => k ? Math.round((fromKey(dayKey()) - fromKey(k)) / 864e5) : Infinity;
 function renderGarden() {
-  const stars = Store.d.stars, open = friendsFor(stars), fresh = Store.d.seen;
+  const stars = Store.d.stars, open = friendsFor(stars), fresh = Store.d.seen, gd = gardenData();
+  const thirsty = daysSince(gd.last) >= 2;
   $('gardenStars').textContent = stars;
-  const g = $('gardenGrid'); g.innerHTML = '';
-  // Uçanlar gökyüzüne, ötekiler çimene; yerleri her açılışta aynı kalsın diye sabit bir sırayla dağıtılır.
-  let sky = 0, ground = 0;
+  const g = $('gardenGrid'); g.innerHTML = ''; gardenEnts = [];
+  let plant = 0, sky = 0;
   FRIENDS.slice(0, open).forEach((f, i) => {
-    const fly = FLIERS.includes(f), k = fly ? sky++ : ground++;
-    const [x, y] = fly ? SKY_SLOTS[k % SKY_SLOTS.length] : GROUND_SLOTS[k % GROUND_SLOTS.length];
-    const b = el('button', 'friend' + (fly ? ' fly' : '') + (BIG.includes(f) ? ' big' : '') + (i >= fresh ? ' fresh' : ''), f);
-    b.style.left = x + '%'; b.style.top = y + '%'; b.style.zIndex = Math.round(y);
-    b.style.animationDelay = (-(i % 5) * .7) + 's';
-    b.setAttribute('aria-label', 'Arkadaş');
-    b.onclick = () => { Sound.play('tap'); b.classList.remove('wiggle', 'fresh'); void b.offsetWidth; b.classList.add('wiggle'); };
-    g.append(b);
+    const kind = G_KIND[f] || 'plant', isNew = i >= fresh;
+    const b = el('button', 'friend ' + kind + (BIG.includes(f) ? ' big' : '') + (kind === 'plant' && thirsty ? ' thirsty' : ''), f);
+    b.setAttribute('aria-label', G_NAME[f] || 'Arkadaş');
+    const e = { el: b, f, kind, ph: rand(0, 6), x: 50, y: 70, vx: 0, flip: 1 };
+    if (kind === 'plant' || kind === 'house') { [e.x, e.y] = GROUND_SLOTS[plant++ % GROUND_SLOTS.length]; }
+    else if (kind === 'fly' || kind === 'float') { [e.x, e.y] = SKY_SLOTS[sky++ % SKY_SLOTS.length]; e.cx = e.x; e.cy = e.y; }
+    else if (kind === 'sky') { e.x = 80; e.y = 30; }
+    else if (kind === 'pond') { e.x = 18; e.y = 86; e.vx = 4; }
+    else { e.x = rand(12, 88); e.y = [64, 72, 80, 88][i % 4]; e.vx = (kind === 'slow' ? 2.2 : kind === 'hop' ? 7 : 5) * (Math.random() < .5 ? -1 : 1); }
+    // yeni gelen arkadaş kenardan içeri girer
+    if (isNew && e.vx) { e.x = e.vx > 0 ? -6 : 106; }
+    if (isNew) b.classList.add('fresh');
+    b.onclick = () => {
+      Sound.play('tap'); b.classList.remove('jump', 'fresh'); void b.offsetWidth; b.classList.add('jump');
+      const bub = el('div', 'g-bubble', G_NAME[f] || ''); bub.style.left = e.x + '%'; bub.style.top = (e.y - 12) + '%';
+      $('gardenGrid').append(bub); setTimeout(() => bub.remove(), 1400);
+    };
+    g.append(b); gardenEnts.push(e);
   });
+  // yeni arkadaş duyurusu
+  const ban = $('gardenBanner');
+  if (open > fresh) {
+    ban.hidden = false; ban.textContent = `Yeni arkadaş: ${FRIENDS[open - 1]} ${G_NAME[FRIENDS[open - 1]] || ''}!`;
+    Sound.play('win'); setTimeout(() => { ban.hidden = true; }, 3200);
+  } else ban.hidden = true;
   const nx = $('gardenNext'); nx.innerHTML = '';
   if (open >= FRIENDS.length) nx.append(el('span', '', 'Hepsi senin! 🎉'));
   else {
@@ -995,7 +1041,62 @@ function renderGarden() {
     fill.style.width = (have / STARS_PER_FRIEND * 100) + '%'; bar.append(fill);
     nx.append(el('span', 'star', '★'), bar, el('span', '', `${have}/${STARS_PER_FRIEND}`), next);   // sıradaki arkadaşın gölgesi
   }
+  renderWater();
   Store.d.seen = open; Store.save();
+  cancelAnimationFrame(gardenRaf);
+  let last = performance.now();
+  const loop = now => {
+    if (screen !== 'garden') return;
+    const dt = Math.min(.05, (now - last) / 1000), t = now / 1000; last = now;
+    for (const e of gardenEnts) gardenStep(e, dt, t);
+    gardenRaf = requestAnimationFrame(loop);
+  };
+  gardenRaf = requestAnimationFrame(loop);
+}
+function gardenStep(e, dt, t) {
+  let tx = 0, ty = 0, rot = 0, sx = 1;
+  const k = e.kind;
+  if (k === 'walk' || k === 'slow' || k === 'hop') {
+    e.x += e.vx * dt;
+    if (e.x < 6 && e.vx < 0 || e.x > 94 && e.vx > 0) e.vx = -e.vx;
+    if (Math.random() < dt * .15) e.vx = -e.vx;   // ara ara fikrini değiştirir
+    sx = e.vx > 0 ? -1 : 1;
+    ty = k === 'hop' ? -Math.abs(Math.sin(t * 4 + e.ph)) * 16 : -Math.abs(Math.sin(t * (k === 'slow' ? 3 : 9) + e.ph)) * 3;
+  } else if (k === 'fly') {
+    const px = e.x; e.x = e.cx + Math.sin(t * .5 + e.ph) * 20; e.y = e.cy + Math.sin(t * 1.4 + e.ph) * 6;
+    sx = e.x > px ? -1 : 1; rot = Math.sin(t * 12 + e.ph) * 6;
+  } else if (k === 'float') { ty = Math.sin(t * 1.2 + e.ph) * 6; rot = Math.sin(t * .9 + e.ph) * 6; }
+  else if (k === 'pond') { e.x += e.vx * dt; if (e.x < 10 || e.x > 26) e.vx = -e.vx; sx = e.vx > 0 ? -1 : 1; ty = Math.sin(t * 3) * 2; }
+  else if (k === 'plant') rot = Math.sin(t * 1.6 + e.ph) * 5;
+  e.el.style.left = e.x + '%'; e.el.style.top = e.y + '%'; e.el.style.zIndex = Math.round(e.y);
+  e.el.style.setProperty('--tx', tx + 'px'); e.el.style.setProperty('--ty', ty + 'px');
+  e.el.style.setProperty('--rot', rot + 'deg'); e.el.style.setProperty('--sx', sx);
+}
+// Günlük sulama: yağmur yağar, çiçekler canlanır, +1 altın (her 5 günde +2 daha)
+function renderWater() {
+  const gd = gardenData(), done = gd.last === dayKey(), btn = $('waterBtn');
+  btn.disabled = done; btn.classList.toggle('done', done);
+  btn.querySelector('b').textContent = done ? 'Yarın' : 'Sula';
+  const live = gd.last === dayKey() || gd.last === addDays(dayKey(), -1);
+  $('gardenStreak').textContent = live && gd.streak > 1 ? `🔥 ${gd.streak} gün` : '';
+}
+function waterGarden() {
+  const gd = gardenData(), today = dayKey();
+  if (gd.last === today) return;
+  gd.streak = gd.last === addDays(today, -1) ? gd.streak + 1 : 1; gd.last = today;
+  const bonus = gd.streak % 5 === 0 ? 2 : 0;
+  Store.d.coins += 1 + bonus; Store.save();
+  Sound.play('right');
+  const rain = $('gardenRain');
+  for (let i = 0; i < 46; i++) {
+    const d = el('i'); d.style.left = rand(0, 100) + '%'; d.style.animationDelay = rand(0, 1.1) + 's'; d.style.animationDuration = rand(.6, 1) + 's';
+    rain.append(d); setTimeout(() => d.remove(), 2400);
+  }
+  setTimeout(() => {
+    for (const e of gardenEnts) if (e.kind === 'plant') { e.el.classList.remove('thirsty'); e.el.classList.remove('grow'); void e.el.offsetWidth; e.el.classList.add('grow'); }
+    Sound.play('win'); cheer(`+${1 + bonus} 🪙`); confetti(16);
+  }, 1300);
+  renderWater();
 }
 
 /* ----- Efektler ----- */
@@ -1019,6 +1120,7 @@ $('soundBtn').onclick = () => { Store.d.sound = !Store.d.sound; Store.save(); if
 const goHome = () => { clearTimeout(nextTimer); Voice.stop(); show('home'); renderHome(); setTimeout(celebrateNext, 400); };
 $('homeBtn').onclick = goHome;
 $('gardenHomeBtn').onclick = goHome;
+$('waterBtn').onclick = waterGarden;
 for (const b of document.querySelectorAll('.back')) b.onclick = goHome;
 $('parentBtn').onclick = () => { Sound.play('tap'); parentGate(() => { draft = null; show('parent'); renderParent(); }); };
 $('endHomeBtn').onclick = goHome;
