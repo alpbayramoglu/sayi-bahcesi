@@ -1169,6 +1169,7 @@ function sneeze(ch, dir) {
 }
 function updateChars(dt) {
   for (const ch of allChars()) {
+    animate(ch, dt);
     if (ch.wet > 0) {
       ch.wet -= dt;
       if (Math.random() < dt * 6) burst('drop', ch.x + rand(-10, 10), ch.y - rand(8, 34), 1, { colors: ['#7CC4F5'], speed: [0, 15], g: 520, size: [1.4, 2.2], life: [.5, .8] });
@@ -1329,6 +1330,7 @@ function beginTurn() {
   play.cur = ch;
   ch.hitShow = false; ch.shield = false;
   play.phase = 'banner'; play.t = 0; play.aim = null; play.ai = null; play.walkDir = 0; play.pick = null; play.bag = false; play.pan = 0;
+  play.bonus = false;
   play.walkLeft = WALK_BUDGET;
   if (ch.sticky) { play.walkLeft = 0; ch.sticky = 0; ch.stuck = true; }   // pastaya yapışan bu tur yürüyemez
   const wm = play.def.wind || 0;
@@ -1337,6 +1339,14 @@ function beginTurn() {
   cam.manual = false; focus(ch.x);
   play.turnNo++;
   if (play.drops.includes(play.turnNo)) startDrop(); else Sound.play('turn');
+}
+// Kutudan gelen +1 atış: sıra karşıya geçmeden aynı karakter bir daha atar
+function bonusTurn() {
+  play.phase = 'banner'; play.t = 0; play.aim = null; play.ai = null; play.walkDir = 0; play.pick = null; play.bag = false; play.pan = 0;
+  play.bonus = true; cam.manual = false; focus(cur().x);
+  const team = curTeam();
+  if (!(team.ammo[team.item] > 0) || ITEMS[team.item].kind !== 'throw') team.item = 'snowball';
+  Sound.play('pickup');
 }
 function endTurn() {
   const ch = cur(); if (ch) ch.stuck = false;
@@ -1357,7 +1367,7 @@ function updateCam(dt) {
 }
 
 /* ----- Sürpriz kutu: maç başına 2 kez, rastgele bir turun başında uçak bırakır ----- */
-const CRATE_LOOT = [['heart', 28], ['fish', 12], ['balloon', 10], ['paint', 8], ['melon', 10], ['bouncy', 10], ['frog', 8], ['bugs', 7], ['umbrella', 7]];
+const CRATE_LOOT = [['heart', 22], ['extra', 12], ['fish', 10], ['balloon', 9], ['paint', 7], ['melon', 10], ['bouncy', 10], ['frog', 7], ['bugs', 6], ['umbrella', 7]];   // toplam 100
 function dropTurns() {
   const a = 2 + Math.floor(rand(0, 3));          // 2.-4. tur
   return [a, a + 2 + Math.floor(rand(0, 3))];    // ilkinden 2-4 tur sonra
@@ -1416,14 +1426,18 @@ function collect(ch, cr) {
   let k = cr.loot;
   if (k === 'heart' && ch.hp >= ch.maxHp) k = 'fish';
   if (k === 'heart') { heal(ch, 30); }
-  else {
+  else if (k === 'extra') {
+    // +1 atış: bu takım sıradaki atışından sonra aynı karakterle bir kez daha atar
+    team.extra = (team.extra || 0) + 1;
+    words.push({ x: cr.x, y: cr.y - 10, word: '🎯 +1 ATIŞ', size: 28, t: 0, color: '#FFD23F' });
+  } else {
     team.ammo[k] = (team.ammo[k] || 0) + 1;
     if (team.free) team.free[k] = (team.free[k] || 0) + 1;   // kutudan gelen bedava, dükkân stoğundan önce harcanır
   }
   Sound.play('pickup');
   burst('spark', cr.x, cr.y - 12, 16, { colors: ['#FFD23F', '#FFFFFF', ch.color], g: 60, speed: [60, 220] });
   ring(cr.x, cr.y - 12, '#FFD23F', 40);
-  if (k !== 'heart') words.push({ x: cr.x, y: cr.y - 10, word: '+1', item: k, size: 30, t: 0, color: '#FFD23F' });
+  if (k !== 'heart' && k !== 'extra') words.push({ x: cr.x, y: cr.y - 10, word: '+1', item: k, size: 30, t: 0, color: '#FFD23F' });
 }
 
 /* ----- Karakter fiziği ----- */
@@ -1447,6 +1461,7 @@ function charPhysics(ch, dt) {
     if (onGround(T, ch)) {
       const r = Math.floor((H - 1 - ch.y) / B);
       ch.y = H - (r + 1) * B; ch.vy = 0; ch.vx = 0; ch.grounded = true;
+      if (ch.fallFrom != null && ch.y - ch.fallFrom > 12) poseKick(ch, { sy: .74, sx: 1.26 });
       const drop = ch.fallFrom == null ? 0 : ch.y - ch.fallFrom;
       if (drop > FALL_SAFE && !ch.chute && !ch.calm) { damage(ch, Math.min(30, (drop - FALL_SAFE) * .2)); burst('smoke', ch.x, ch.y - 2, 6, { colors: ['#E9E0D2'], g: -10, speed: [30, 90], size: [4, 7], grow: 10, life: [.4, .7], drag: 2 }); }
       ch.fallFrom = null; ch.chute = false; ch.calm = false; break;
@@ -1468,6 +1483,7 @@ function damage(ch, amt, snowy = false) {
   if (snowy) ch.hitShow = true;   // başta kar yığını yalnızca kartopunda; diğer isabetler kendi izini bırakır
   ch.hp = Math.max(0, ch.hp - amt);
   ch.hurtT = .6;
+  poseKick(ch, { sy: .62, sx: 1.36 });
   if (!ch.mood || (ch.mood.k === 'sneeze' && ch.mood.fired)) react(ch, 'hurt', { dur: .5 });
   burst('spark', ch.x, ch.y - 44, 6, { colors: ['#FF7A6E', '#FFFFFF'], g: 120, speed: [60, 140] });
   words.push({ x: ch.x + rand(-8, 8), y: ch.y - 34, word: '−' + amt, size: 20 + Math.min(16, amt / 3), t: 0, color: amt >= 30 ? '#FF4D3D' : '#FF8A5C' });
@@ -1555,6 +1571,7 @@ function simulate(x, y, vx, vy, item, team, maxT, path) {
 function newProj(o) { return Object.assign({ t: 0, trail: [], bounces: 0, rot: 0 }, o); }
 function fire(vx, vy) {
   const ch = cur(), team = curTeam(), k = team.item;
+  ch.throwT = .38; ch.face = Math.sign(vx) || ch.face; poseOf(ch).vel.armR = -30;
   play.projs.push(newProj({ x: ch.x, y: ch.y - 24, vx, vy, item: k, team: ch.team, dir0: Math.sign(vx) || 1, fuse: ITEMS[k].fuse ? play.fuse : 0 }));
   useAmmo(team, k);
   if (team.cpu) play.cpuShots++;
@@ -1593,7 +1610,6 @@ function explode(p, x, y, kind) {
   (IMPACT[p.item] || ((xx, yy) => spawn(xx, yy, 26, it.colors)))(x, y, T);
   words.push({ x, y, word: it.word, size: 34, t: 0 });
   shake = Math.max(shake, it.noCarve ? 2 : 6);
-  if (!it.noCarve) cam.kick = Math.max(cam.kick, Math.min(.12, (it.dmg || 20) / 300));
   for (const cr of play.crates) {
     if (!cr.gone && p.team >= 0 && Math.hypot(cr.x - x, cr.y - 12 - y) < it.r + 12) collect(play.teams[p.team].chars.find(alive) || play.teams[p.team].chars[0], cr);
   }
@@ -1868,7 +1884,10 @@ function updatePlay(dt) {
     if (!play.projs.length && !play.acts.length) { play.phase = 'settle'; play.t = 0; }
   } else if (play.phase === 'settle') {
     if (play.t > .9 && allChars().every(c => (c.grounded || !alive(c)) && !(c.mood && c.mood.block && !c.mood.fired))) {
-      if (!checkOver()) endTurn();
+      if (!checkOver()) {
+        const tm = curTeam();
+        if (tm.extra > 0 && alive(cur())) { tm.extra--; bonusTurn(); } else endTurn();
+      }
     }
   } else if (play.phase === 'over') {
     play.overT += dt;
@@ -2245,9 +2264,183 @@ function creamLook(c) {
   ell(c, 2, -50, 1, 1); c.fillStyle = '#FFFFFF'; c.fill();
   c.strokeStyle = '#5A8F3A'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(3, -52); c.quadraticCurveTo(5, -56, 8, -56); c.stroke();
 }
+
+/* ================= Canlı karakterler =================
+   Karakter parça parça çizilir (ayaklar, kollar/kanatlar, gövde, kafa, kuyruk). Her parçanın açısı ve
+   gövdenin basılıp esnemesi bir "poz"dan gelir; poz hedefine yay gibi gider, böylece hareketler
+   arasındaki geçiş kendiliğinden yumuşak olur ve sonunda hafifçe esneyerek oturur. */
+const POSE0 = { sx: 1, sy: 1, lean: 0, hop: 0, lookX: 0, lookY: 0, tilt: 0, armL: .12, armR: .12, ear: 0, tail: 1 };
+function poseOf(ch) {
+  if (!ch.pose) { ch.pose = { v: { ...POSE0 }, t: { ...POSE0 }, vel: {}, k: 220 }; for (const k in POSE0) ch.pose.vel[k] = 0; }
+  return ch.pose;
+}
+function poseStep(P, dt) {
+  const n = 3, h = dt / n, k = P.k, d = 2 * Math.sqrt(k) * .6;
+  for (let i = 0; i < n; i++) for (const key in P.t) {
+    const a = k * (P.t[key] - P.v[key]) - d * P.vel[key];
+    P.vel[key] += a * h; P.v[key] += P.vel[key] * h;
+  }
+}
+const poseKick = (ch, o) => Object.assign(poseOf(ch).v, o);
+// Her karede karakterin durumuna göre hedef pozu seç
+function animate(ch, dt) {
+  const P = poseOf(ch), m = ch.mood, isCur = play && play.cur === ch, team = play.teams[ch.team];
+  ch.footL = 0; ch.footR = 0; ch.hold = null;
+  if (!ch.face) ch.face = ch.team === 0 ? 1 : -1;
+  const foe = nearestFoe(ch);
+  if (alive(ch) && foe !== ch && Math.abs(foe.x - ch.x) > 4) ch.face = Math.sign(foe.x - ch.x);
+  const b = Math.sin(time * 2.6 + ch.idx * 1.7 + ch.team * 2.3);
+  P.k = 220;
+  const t = { sx: 1 - .02 * b, sy: 1 + .028 * b, lean: .03 * Math.sin(time * .9 + ch.idx), hop: 0, lookX: 1.2 + .8 * Math.sin(time * .7 + ch.idx * 2), lookY: 0,
+    tilt: .04 * Math.sin(time * 1.1 + ch.team), armL: .12 + .08 * b, armR: .12 + .08 * Math.sin(time * 2.6 + .5), ear: 0, tail: 1 };
+  const ai = play.ai, aiming = isCur && play.phase === 'aim' && !play.pick && ITEMS[team.item].kind === 'throw' &&
+    (play.aim ? Math.hypot(play.aim.x0 - play.aim.x, play.aim.y0 - play.aim.y) >= AIM_MIN : team.cpu && ai && ai.kind === 'throw' && play.t > .5);
+  if (ch.throwT > 0) {
+    ch.throwT -= dt; P.k = 900;
+    Object.assign(t, { lean: .26, sx: 1.1, sy: .9, armR: -.25, armL: -.1, lookX: 3, lookY: 0, tilt: .12 });
+  } else if (aiming) {
+    const dx = play.aim ? play.aim.x0 - play.aim.x : ai.vx, dy = play.aim ? play.aim.y0 - play.aim.y : ai.vy;
+    if (Math.abs(dx) > 2) ch.face = Math.sign(dx);
+    const up = clamp(-dy / (Math.hypot(dx, dy) || 1), -1, 1);   // yukarı nişan alırken başını kaldırır
+    const pw = play.aim ? Math.min(Math.hypot(dx, dy) / PULL_MAX, 1) : clamp((play.t - .5) / .9, 0, 1) * (ai.pw || 1);
+    Object.assign(t, { sx: 1.04, sy: .94, lean: -.14, lookX: 2.8, lookY: -2.6 * up, tilt: -.12 * up, armL: .55, armR: 2.1 + .8 * pw + .06 * Math.sin(time * 9), ear: -.2, tail: 1.8 });
+    ch.hold = team.item;
+  } else if (isCur && play.walkDir && ch.grounded) {
+    const s = Math.sin(ch.walkAnim * 14);
+    Object.assign(t, { hop: -Math.abs(s) * 3, lean: .1 * s, armL: .55 + .45 * s, armR: .55 - .45 * s, lookX: 2.2, tilt: .06 * s, tail: 1.4 });
+    ch.face = play.walkDir; ch.footL = -Math.max(0, s) * 3; ch.footR = -Math.max(0, -s) * 3;
+  } else if (isCur && play.phase === 'aim' && !team.cpu) {
+    Object.assign(t, { armR: .5 + .1 * Math.sin(time * 3), lookX: 2.4 });   // sırası gelen hazır bekler
+  }
+  if (m) {
+    if (m.k === 'cheer') { const ph = m.t * 9; Object.assign(t, { armL: 2.6 + .35 * Math.sin(ph * 2), armR: 2.6 - .35 * Math.sin(ph * 2), lookY: -1, lookX: 0, tail: 2 }); }
+    else if (m.k === 'laugh') Object.assign(t, { armL: 1.2 + .7 * Math.sin(m.t * 22), armR: 1.2 - .7 * Math.sin(m.t * 22), lookX: 0 });
+    else if (m.k === 'hurt') Object.assign(t, { armL: 1.4, armR: 1.4, lean: -.18, lookX: 0 });
+    else if (m.k === 'sneeze') Object.assign(t, m.fired ? { armL: 1.6, armR: 1.6, lean: -.25 } : { armL: .45, armR: .45, lookY: -2.5, lookX: 0 });
+  }
+  if (ch.dizzy > 0) t.tilt = Math.sin(time * 5) * .2;
+  if (ch.chute || ch.carried) Object.assign(t, { armL: 2.7, armR: 2.7, lookY: -1 });
+  else if (!ch.grounded && alive(ch) && ch.vy > 120) Object.assign(t, { armL: 2, armR: 2, sy: 1.08, sx: .94 });   // düşerken kollar havada
+  if (!alive(ch)) Object.assign(t, { armL: .05, armR: .05, sy: .9, sx: 1.08, tail: .2, ear: 1, lookY: 2 });
+  P.t = t;
+  poseStep(P, dt);
+}
+function rigParts(c, parts) {
+  for (const pt of parts) if (pt.sil) {
+    c.save(); pt.tf(c); pt.path(c);
+    c.fillStyle = INK; c.strokeStyle = INK; c.lineWidth = OL * 2; c.lineJoin = 'round'; c.fill(); c.stroke();
+    c.restore();
+  }
+  for (const pt of parts) {
+    c.save(); pt.tf(c); pt.path(c);
+    c.fillStyle = typeof pt.fill === 'function' ? pt.fill(c) : pt.fill; c.fill();
+    if (pt.after) pt.after(c);
+    c.restore();
+  }
+}
+// Gözler: open, blink, squint (><), happy (^^), spiral, determined (kaşlı), sad
+function rigEyes(c, xs, y, mode, p, r, iris) {
+  const lx = p.lookX * .55, ly = p.lookY * .45;
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  xs.forEach((x, i) => {
+    const side = i === 0 ? -1 : 1;
+    if (mode === 'squint') { c.strokeStyle = INK; c.lineWidth = 2.1; c.beginPath(); c.moveTo(x - 3 * side, y - 2.6); c.lineTo(x + 1.6 * side, y); c.lineTo(x - 3 * side, y + 2.6); c.stroke(); return; }
+    if (mode === 'happy') { c.strokeStyle = INK; c.lineWidth = 2.2; c.beginPath(); c.arc(x, y + 1.6, 3, Math.PI * 1.12, Math.PI * 1.88); c.stroke(); return; }
+    if (mode === 'blink') { c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(x - 3.2, y); c.quadraticCurveTo(x, y + 2.2, x + 3.2, y); c.stroke(); return; }
+    if (mode === 'spiral') { c.strokeStyle = INK; c.lineWidth = 1.3; c.beginPath(); for (let a = 0; a < 9.5; a += .35) { const rr2 = a * .38; c.lineTo(x + Math.cos(a + time * 7) * rr2, y + Math.sin(a + time * 7) * rr2); } c.stroke(); return; }
+    if (iris) { ell(c, x + lx * .5, y + ly * .5, r * 1.1, r * 1.25); c.fillStyle = iris; c.fill(); }
+    ell(c, x + lx, y + ly, iris ? r * .48 : r, iris ? r : r * 1.1); c.fillStyle = '#11131C'; c.fill();
+    ell(c, x + lx - r * .35, y + ly - r * .45, r * .36, r * .36); c.fillStyle = '#FFFFFF'; c.fill();
+    if (mode === 'determined') { c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(x + 4 * side, y - r - 3.2); c.lineTo(x - 3.5 * side, y - r - 1.2); c.stroke(); }
+    if (mode === 'sad') { c.strokeStyle = INK; c.lineWidth = 1.8; c.beginPath(); c.moveTo(x - 3.5 * side, y - r - 1.2); c.lineTo(x + 3 * side, y - r - 3.4); c.stroke(); }
+  });
+}
+function heldItem(c, k) { if (!k) return; c.save(); c.rotate(-Math.PI / 2); itemIcon(k, 0, 0, 17); c.restore(); }
+// o: { eyes, hit, body(c): gövde katmanı üstüne (lekeler, ıslaklık, krema), face(c): yüz üstüne (ağız, burun, gözyaşı) }
+function penguinRig(c, ch, o) {
+  const p = poseOf(ch).v, team = ch.color;
+  const lift = clamp(-p.hop / 30, 0, .6);
+  c.fillStyle = 'rgba(30,34,51,.2)'; ell(c, 0, 0, 16 * (1 - lift * .5), 3.5 * (1 - lift * .5)); c.fill();
+  c.save(); c.scale(ch.face || 1, 1);
+  const body = c => { c.translate(0, p.hop); c.rotate(p.lean); c.scale(p.sx, p.sy); };
+  const face = c => { body(c); c.translate(0, -28); c.rotate(p.tilt * .6); c.translate(p.lookX * .5, 28 + p.lookY * .35); };
+  const bodyFill = c => lin(c, -18, -40, 18, 0, ['#4A5B82', '#2B3550', '#1E2540']);
+  const orange = c => lin(c, 0, -6, 0, 0, ['#FFC04D', '#F08C1E']);
+  rigParts(c, [
+    { tf: c => c.translate(-7, p.hop * .85 + (ch.footL || 0)), path: c => ell(c, 0, -2.5, 6.5, 3.6), fill: orange, sil: 1 },
+    { tf: c => c.translate(7, p.hop * .85 + (ch.footR || 0)), path: c => ell(c, 0, -2.5, 6.5, 3.6), fill: orange, sil: 1 },
+    { tf: c => { body(c); c.translate(-14.5, -26); c.rotate(.35 + p.armL); }, path: c => ell(c, 0, 9, 4.8, 10.5), fill: '#2E3856', sil: 1 },
+    { tf: c => { body(c); c.translate(14.5, -26); c.rotate(-(.35 + p.armR)); }, path: c => ell(c, 0, 9, 4.8, 10.5), fill: '#2E3856', sil: 1, after: c => { if (ch.hold) { c.translate(0, 20); heldItem(c, ch.hold); } } },
+    { tf: body, path: c => ell(c, 0, -20, 17, 20), fill: bodyFill, sil: 1 },
+    { tf: body, path: c => ell(c, 0, -8.5, 11.5, 8.5), fill: c => lin(c, 0, -18, 0, 0, ['#FFFFFF', '#DCE6F3']) },
+    { tf: face, path: c => { ell(c, -5.2, -29.5, 6.8, 7.3); c.moveTo(12, -29.5); c.ellipse(5.2, -29.5, 6.8, 7.3, 0, 0, Math.PI * 2); }, fill: '#FFFFFF' },
+    { tf: c => { face(c); c.translate(p.lookX * .3, p.lookY * .15); }, path: c => { c.beginPath(); c.moveTo(-4, -24.5); c.quadraticCurveTo(0, -26, 4, -24.5); c.quadraticCurveTo(1.5, -19.5, 0, -19.5); c.quadraticCurveTo(-1.5, -19.5, -4, -24.5); c.closePath(); }, fill: orange },
+    { tf: body, path: c => rr(c, -15.5, -18.5, 31, 6.5, 3.2), fill: c => lin(c, 0, -19, 0, -12, [lighten(team, 30), team]) },
+    { tf: c => { body(c); c.translate(9, -14); c.rotate(Math.sin(time * 7 + ch.idx) * .18 - p.lean * 1.5 + .1); }, path: c => rr(c, -3, -1, 6, 11, 3), fill: team },
+  ]);
+  c.save(); face(c);
+  rigEyes(c, [-5.2, 5.2], -29.5, o.eyes, p, 3.3, null);
+  c.fillStyle = 'rgba(247,120,150,.42)'; ell(c, -10.5, -23.5, 2.6, 1.8); c.fill(); ell(c, 10.5, -23.5, 2.6, 1.8); c.fill();
+  if (o.face) o.face(c);
+  c.restore();
+  c.save(); body(c); if (o.hit) snowPile(c, -40); if (o.body) o.body(c); c.restore();
+  c.restore();
+}
+function catRig(c, ch, o) {
+  const p = poseOf(ch).v, team = ch.color;
+  const lift = clamp(-p.hop / 30, 0, .6);
+  c.fillStyle = 'rgba(30,34,51,.2)'; ell(c, 0, 0, 16 * (1 - lift * .5), 3.5 * (1 - lift * .5)); c.fill();
+  c.save(); c.scale(-(ch.face || -1), 1);   // kedi çizimi sola bakar: yüzü dönükse aynala
+  const body = c => { c.translate(0, p.hop); c.rotate(p.lean); c.scale(p.sx, p.sy); };
+  const head = c => { body(c); c.translate(0, -28); c.rotate(p.tilt); c.translate(-p.lookX * .35, p.lookY * .25); };
+  const fur = c => lin(c, -16, -16, 16, 16, ['#FFB45E', '#F39A3B', '#DE7A22']);
+  const cream = c => lin(c, 0, -8, 0, 8, ['#FFFFFF', '#F7E6D2']);
+  // kuyruk (arkada)
+  c.save(); body(c);
+  const wv = Math.sin(time * 3.2 + ch.idx) * p.tail, wv2 = Math.cos(time * 2.4 + ch.idx) * p.tail;
+  const tail = () => { c.beginPath(); c.moveTo(9, -6); c.quadraticCurveTo(22, -6 + wv, 20 + wv * .4, -20); c.quadraticCurveTo(19 - wv2 * .5, -27, 23 + wv2, -30 - p.tail); };
+  c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 6 + OL * 2; tail(); c.stroke();
+  c.strokeStyle = '#E8862C'; c.lineWidth = 6; tail(); c.stroke();
+  c.restore();
+  const earL = c => { head(c); c.translate(-9, -8); c.rotate(-p.ear * .7); c.translate(9, 8); };
+  const earR = c => { head(c); c.translate(9, -8); c.rotate(p.ear * .7); c.translate(-9, 8); };
+  rigParts(c, [
+    { tf: c => c.translate(-6, p.hop * .85 + (ch.footR || 0)), path: c => ell(c, 0, -2.5, 5, 3.2), fill: cream, sil: 1 },
+    { tf: c => c.translate(6, p.hop * .85 + (ch.footL || 0)), path: c => ell(c, 0, -2.5, 5, 3.2), fill: cream, sil: 1 },
+    { tf: body, path: c => ell(c, 0, -9, 12, 9.5), fill: fur, sil: 1 },
+    { tf: body, path: c => ell(c, 0, -6, 6.5, 6), fill: cream },
+    { tf: c => { body(c); c.translate(8, -13); c.rotate(-(.3 + p.armL)); }, path: c => ell(c, 0, 5, 3.6, 6.4), fill: '#F39A3B', sil: 1 },
+    { tf: earL, path: c => { c.beginPath(); c.moveTo(-15, -5); c.lineTo(-12.5, -19); c.lineTo(-3, -11); c.closePath(); }, fill: fur, sil: 1 },
+    { tf: earR, path: c => { c.beginPath(); c.moveTo(15, -5); c.lineTo(12.5, -19); c.lineTo(3, -11); c.closePath(); }, fill: fur, sil: 1 },
+    { tf: head, path: c => ell(c, 0, 0, 16.5, 14), fill: fur, sil: 1 },
+    { tf: earL, path: c => { c.beginPath(); c.moveTo(-12, -8); c.lineTo(-11.5, -15); c.lineTo(-6.5, -10.5); c.closePath(); }, fill: '#F7A1B5' },
+    { tf: earR, path: c => { c.beginPath(); c.moveTo(12, -8); c.lineTo(11.5, -15); c.lineTo(6.5, -10.5); c.closePath(); }, fill: '#F7A1B5' },
+    { tf: head, path: c => ell(c, -p.lookX * .2, 6.5, 8, 5.5), fill: cream },
+    { tf: body, path: c => rr(c, -12.5, -15.5, 25, 5.5, 2.75), fill: c => lin(c, 0, -15, 0, -10, [lighten(team, 30), team]) },
+  ]);
+  c.save(); head(c);
+  c.strokeStyle = '#C96A1E'; c.lineWidth = 1.8; c.lineCap = 'round';
+  [-4, 0, 4].forEach(dx => { c.beginPath(); c.moveTo(dx, -12); c.lineTo(dx, -8); c.stroke(); });
+  const mx = -p.lookX * .2;
+  c.fillStyle = '#F07C98'; c.beginPath(); c.moveTo(mx - 2, 4); c.lineTo(mx + 2, 4); c.lineTo(mx, 6); c.closePath(); c.fill();
+  c.strokeStyle = INK; c.lineWidth = 1.1;
+  c.beginPath(); c.moveTo(mx, 6); c.quadraticCurveTo(mx - 1.5, 8.5, mx - 3.2, 7.5); c.moveTo(mx, 6); c.quadraticCurveTo(mx + 1.5, 8.5, mx + 3.2, 7.5); c.stroke();
+  c.strokeStyle = 'rgba(30,34,51,.55)'; c.lineWidth = .9;
+  [[-8, 6, -17, 4], [-8, 7.5, -17, 8.5], [8, 6, 17, 4], [8, 7.5, 17, 8.5]].forEach(([a, b2, d, e]) => { c.beginPath(); c.moveTo(a + mx, b2); c.lineTo(d + mx, e + Math.sin(time * 3) * .4); c.stroke(); });
+  rigEyes(c, [-6, 6], -1, o.eyes, { lookX: -p.lookX, lookY: p.lookY }, 3.4, '#8BD96A');
+  c.fillStyle = 'rgba(247,120,150,.42)'; ell(c, -11, 4, 2.6, 1.8); c.fill(); ell(c, 11, 4, 2.6, 1.8); c.fill();
+  if (o.face) { c.translate(0, 28); o.face(c); }
+  c.restore();
+  c.save(); body(c); if (o.hit) snowPile(c, -43); if (o.body) o.body(c); c.restore();
+  // atış patisi en önde
+  rigParts(c, [{ tf: c => { body(c); c.translate(-8, -13); c.rotate(.3 + p.armR); }, path: c => ell(c, 0, 5.5, 3.8, 7), fill: '#F39A3B', sil: 1,
+    after: c => { ell(c, 0, 10, 2.6, 2.2); c.fillStyle = '#FFF4E6'; c.fill(); if (ch.hold) { c.translate(0, 15); heldItem(c, ch.hold); } } }]);
+  c.restore();
+}
+
 function drawChar(ch, isTurn) {
   const out = !alive(ch), m = ch.mood, cat = ch.team === 1;
-  let bob = ch.walkAnim > 0 && play && play.walkDir && isTurn ? Math.abs(Math.sin(ch.walkAnim * 14)) * 2 : 0;
+  let bob = 0;
   let rot = 0, sx = 1, sy = 1 + Math.sin(time * 2.6 + ch.idx * 1.7 + ch.team * 2.3) * .018;   // nefes alıp verme
   let eyes = null, mouth = null, nose = false, tears = false, say = null;
   if (!ch.blinkAt || time > ch.blinkAt + .14) ch.blinkAt = time + rand(2.2, 5);
@@ -2271,13 +2464,18 @@ function drawChar(ch, isTurn) {
   ctx.save(); ctx.translate(ch.x, ch.y - bob); ctx.rotate(rot); ctx.scale(sx * ps, sy * ps);
   if (out) { ctx.globalAlpha = .55; ctx.rotate(-.12); }
   const s = cat ? .975 : 1.02; ctx.scale(s, s);
-  (cat ? catArt : penguinArt)(ctx, ch.hitShow || out, ch.color);
-  if (!out) {
-    if (ch.spots) { ctx.globalAlpha = Math.min(1, ch.paintT / 2); for (const p of ch.spots) { ell(ctx, p.x, p.y, p.r, p.r * .85); ctx.fillStyle = p.c; ctx.fill(); } ctx.globalAlpha = 1; }
-    if (ch.wet > 0) wetLook(ctx);
-    if (eyes || mouth || nose) face(ctx, cat, eyes, mouth, nose, tears);
-    if (ch.sticky || ch.stuck) creamLook(ctx);
-  }
+  const hitLook = ch.hitShow || out;
+  let eyeMode = eyes || (hitLook ? 'squint' : ch.hold ? 'determined' : ch.throwT > 0 ? 'determined' : 'open');
+  if (out) eyeMode = 'squint';
+  (cat ? catRig : penguinRig)(ctx, ch, {
+    eyes: eyeMode, hit: hitLook,
+    body: out ? null : c => {
+      if (ch.spots) { c.globalAlpha = Math.min(1, ch.paintT / 2); for (const p of ch.spots) { ell(c, p.x, p.y, p.r, p.r * .85); c.fillStyle = p.c; c.fill(); } c.globalAlpha = 1; }
+      if (ch.wet > 0) wetLook(c);
+      if (ch.sticky || ch.stuck) creamLook(c);
+    },
+    face: out || !(mouth || nose || tears) ? null : c => face(c, cat, null, mouth, nose, tears),
+  });
   ctx.restore();
   if (ch.shield && !out) {
     ell(ctx, ch.x, ch.y - 22, 26, 30); ctx.strokeStyle = 'rgba(127,224,255,.9)'; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = 'rgba(127,224,255,.15)'; ctx.fill();
@@ -2436,7 +2634,8 @@ function drawPlay(dt) {
   drawClouds(time + cam.x * .02);
   drawBackdrop(T);
   ctx.save();
-  const sx = shake > 0 ? rand(-shake, shake) : 0, sy = shake > 0 ? rand(-shake, shake) : 0;
+  // sarsıntı yalnızca hafif bir titreme: en fazla ~2 piksel (yakınlaşmada da büyümesin diye zoom'a bölünür)
+  const amp = Math.min(shake, 6) * .35 / (cam.z || 1), sx = shake > 0 ? rand(-amp, amp) : 0, sy = shake > 0 ? rand(-amp, amp) : 0;
   worldTransform(ctx, sx, sy);
   drawWater(T, cam.x);
   drawAmbient(T, dt);
@@ -2542,9 +2741,7 @@ function drawAim(ch) {
     if (max) { text('MAX', ch.x + bw / 2 + 20, by0 + 3, 13, { color: '#FF5A4E', lw: 4 }); if (!play.maxTick) { play.maxTick = true; Sound.play('tick'); } }
     else play.maxTick = false;
   }
-  ctx.strokeStyle = team.cpu ? '#8A5D39' : col; ctx.lineWidth = 4; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(hx - 8, hy - 4); ctx.lineTo(bx, by); ctx.lineTo(hx + 8, hy - 4); ctx.stroke();
-  itemIcon(team.item, bx, by, 24);
+  // eşya artık karakterin elinde; kolun ne kadar geri gittiği gücü gösterir (animate)
 }
 function drawProj(p) {
   if (p.delay > 0) return;
@@ -2750,7 +2947,7 @@ function drawBanner() {
   const w = 380, h = 112, x = W / 2 - w / 2, y = 110;
   panel(x, y, w, h, ch.color);
   ctx.save(); ctx.translate(x + 62, y + h - 16); ctx.scale(1.6, 1.6); (ch.team === 0 ? penguinArt : catArt)(ctx, false, ch.color, false); ctx.restore();
-  const msg = play.mode === '1p' ? (curTeam().cpu ? 'SIRA KEDİDE' : 'SIRA SENDE!') : (ch.team === 0 ? 'SIRA MAVİDE!' : 'SIRA KIRMIZIDA!');
+  const msg = play.bonus ? 'BİR ATIŞ DAHA!' : play.mode === '1p' ? (curTeam().cpu ? 'SIRA KEDİDE' : 'SIRA SENDE!') : (ch.team === 0 ? 'SIRA MAVİDE!' : 'SIRA KIRMIZIDA!');
   text(msg, x + 112 + (w - 112) / 2 - 10, y + h / 2, 30, { color: INK, stroke: null });
   ctx.restore();
 }
