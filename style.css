@@ -481,3 +481,4 @@ h1 { color: var(--ink); text-shadow: none; }
   .cat-body { gap: 10px; }
   .level { padding: 5px 4px 6px; }
 }
+.shop-dmg { font-size: 15px; color: #C8473B; background: #FDECEA; border-radius: 999px; padding: 0 10px; margin-top: 2px; }
