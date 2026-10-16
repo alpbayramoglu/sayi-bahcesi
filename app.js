@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 14;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v14)
+const VERSION = 15;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v15)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -51,7 +51,7 @@ const SHOP = [
   { key: 'melon', desc: "Çarpınca dört dilime ayrılır, her dilim ayrıca patlar.", how: "Çantadan seç, geri çek, bırak.", tip: "Rakibin tam üstüne düşerse dilimler etrafa saçılır.", g: 'throw', ico: '🍉', name: 'Karpuz', info: 'Dört dilime ayrılır', price: 3 },
   { key: 'boomerang', desc: "Uçar uçar, sonra geri döner. Arkadaki rakibi bile vurabilir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu çok iter.", g: 'throw', ico: '🪃', name: 'Bumerang', info: 'Geri döner', price: 3 },
   { key: 'cake', desc: "Rakibin yüzüne krema yapışır. Bir sonraki turunda yürüyemez!", how: "Çantadan seç, geri çek, bırak.", tip: "Kaçmaya çalışan rakibe at.", g: 'throw', ico: '🎂', name: 'Pasta', info: 'Rakip bir tur yürüyemez', price: 3 },
-  { key: 'tickle', desc: "Hiç acıtmaz, sadece gıdıklar. Rakip gülmekten kayar.", how: "Çantadan seç, geri çek, bırak.", tip: "Uçurumun kenarındaki rakibi suya kaydırabilir!", g: 'throw', ico: '🪶', name: 'Gıdıklama Tüyü', info: 'Hihi! Rakibi kaydırır', price: 1 },
+  { key: 'tickle', desc: "Çok az acıtır ama çok güldürür. Rakip gülmekten kayar.", how: "Çantadan seç, geri çek, bırak.", tip: "Uçurumun kenarındaki rakibi suya kaydırabilir!", g: 'throw', ico: '🪶', name: 'Gıdıklama Tüyü', info: 'Hihi! Rakibi kaydırır', price: 1 },
   { key: 'pepper', desc: "Rakip biberin tozunu yutar, önce \"ha... ha...\" der, sonra HAPŞU! diye geriye uçar.", how: "Çantadan seç, geri çek, bırak.", tip: "Suya yakın rakibe at.", g: 'throw', ico: '🌶️', name: 'Hapşırık Biberi', info: 'Rakibi uçurur', price: 3 },
   { key: 'clock', desc: "Çalar saati sen kurarsın: kaç saniye sonra çalacağını seçersin. Seker, yuvarlanır, zamanı gelince çalar.", how: "Çantadan seç, ⏰ ile saniyeyi ayarla, geri çek, bırak.", tip: "Rakibin yanına yuvarlanması için az güçle at.", g: 'num', ico: '⏰', name: 'Çalar Saat', info: 'Kaç saniye sonra?', price: 3 },
   { key: 'frog', desc: "Kurbağa rakibe doğru zıplar. Kaç kere zıplayacağını sen seçersin; her zıplama cetvelde bir sayı.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Cetvelde senin sayından kedinin sayısına kaç tane var, say!", g: 'num', ico: '🐸', name: 'Zıp Zıp Kurbağa', info: 'Kaç kere zıplasın?', price: 3 },

@@ -2,7 +2,7 @@
 // Bütün dosyalar tek sürüm olarak birlikte önbelleğe alınır ve hep önbellekten verilir;
 // böylece yeni index.html ile eski app.js gibi karışık bir sürüm oluşmaz.
 // Her yayında CACHE adını artır: yeni service worker bütün dosyaları birlikte yeniden indirir.
-const CACHE = 'sayi-bahcesi-v14';   // app.js içindeki VERSION ile aynı tut
+const CACHE = 'sayi-bahcesi-v15';   // app.js içindeki VERSION ile aynı tut
 importScripts('audio/clips.js');   // self.CLIPS: tools/make-audio.sh'in ürettiği ses parçaları
 const ASSETS = [
   ...self.CLIPS.map(n => `./audio/${n}.mp3`),
