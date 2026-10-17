@@ -24,6 +24,9 @@ CLIPS=(
   "yeni_arkadas|Bahçene yeni bir arkadaş geldi!"
 )
 for n in $(seq 0 100); do CLIPS+=("n$n|$n"); done
+# Sayıyı Dinle: binler (t23 → "yirmi üç bin") ve yüzler (h4 → "dört yüz"); rakamla verilince Yelda doğal okur
+for n in $(seq 1 99); do CLIPS+=("t$n|${n}000"); done
+for n in $(seq 1 9); do CLIPS+=("h$n|${n}00"); done
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT

@@ -19,12 +19,13 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 17;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v17)
+const VERSION = 18;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v18)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
   { key: 'seq', g: 'num', label: 'Sayı Dizisi', ico: '1 2 ?', c: '#8E7CF0' },
   { key: 'blank', g: 'num', label: 'Boşluk Doldur', ico: '3+?=5', c: '#3FA9F5' },
+  { key: 'hear', g: 'num', label: 'Sayıyı Dinle', ico: '🔊', c: '#E8A317' },
   { key: 'mix', g: 'num', label: 'Karışık', ico: '🎲', c: '#FF6FA8' },
   { key: 'pat', g: 'shape', label: 'Örüntü', ico: '🔺🔵🔺', c: '#14B8A6' },
   { key: 'sym', g: 'shape', label: 'Ayna', ico: '🦋', c: '#E05FC4' },
@@ -131,7 +132,46 @@ const GEN = {
     return { t: 'seq', start, step, len, hole: lv === 3 ? rnd(0, len - 1) : rnd(1, len - 1) };
   },
   mix(lv) { return GEN[pick(['add', 'sub', 'seq', 'blank'])](lv); },
+  // Sayıyı Dinle: Kolay 1–2 basamak, Orta 3, Zor 4–5 basamak. İçinde sıfır olan sayılar en çok karışanlar, sık gelsin.
+  hear(lv) {
+    let n = lv === 1 ? (Math.random() < .25 ? rnd(0, 9) : rnd(10, 99))
+      : lv === 2 ? rnd(100, 999) : Math.random() < .5 ? rnd(1000, 9999) : rnd(10000, 99999);
+    const d = [...String(n)];
+    if (d.length >= 3 && Math.random() < .35) { d[rnd(1, d.length - 1)] = '0'; n = +d.join(''); }
+    return { t: 'hear', n };
+  },
 };
+
+// Sayıyı sesli okuma parçaları: 23.456 → t23 ("yirmi üç bin"), h4 ("dört yüz"), n56. gap: parçalar arasına duraklama
+function numSay(n, gap = false) {
+  const T = Math.floor(n / 1000), H = Math.floor(n % 1000 / 100), R = n % 100, out = [];
+  if (T) out.push('t' + T);
+  if (H) out.push('h' + H);
+  if (R || !out.length) out.push(N(R));
+  return gap ? out.flatMap((p, i) => i ? [0, p] : [p]) : out;
+}
+// 12345 → "12.345" (binlik ayırıcı nokta)
+const fmtNum = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+// Çeldiriciler duyarken yapılan gerçek hatalardan: basamakları ters yazma (23 → 32),
+// bir basamağı kaçırma (23 → 13, 24), sıfırı atlama ya da fazladan yazma (305 → 35, 3005).
+function hearOpts(n, k) {
+  const s = String(n), L = s.length, ok = t => t && (t.length === 1 || t[0] !== '0') ? +t : null;
+  const swaps = [], digits = [], zeros = [];
+  for (let i = 0; i < L - 1; i++) if (s[i] !== s[i + 1]) swaps.push(ok(s.slice(0, i) + s[i + 1] + s[i] + s.slice(i + 2)));
+  for (let i = 0; i < L; i++) for (const d of [1, -1]) {
+    const v = +s[i] + d;
+    if (v >= 0 && v <= 9) digits.push(ok(s.slice(0, i) + v + s.slice(i + 1)));
+  }
+  if (L === 1) digits.push(n + 10, n * 10);   // 3 → 13, 30
+  const z = s.slice(0, -1).indexOf('0', 1);   // aradaki sıfır (sondaki sıfırı atmak başka bir sayı gibi duyulur)
+  if (z > 0) zeros.push(ok(s.slice(0, z) + s.slice(z + 1)), ok(s.slice(0, z) + '0' + s.slice(z)));
+  else if (L >= 3) { const i = rnd(1, L - 1); zeros.push(ok(s.slice(0, i) + '0' + s.slice(i))); }
+  const order = [...shuffle(swaps).slice(0, 1), ...shuffle(digits).slice(0, 1), ...shuffle(zeros).slice(0, 1), ...shuffle(digits), ...swaps];
+  const set = new Set([n]);
+  for (const v of order) if (set.size < k && v != null && v >= 0) set.add(v);
+  for (let d = 2; set.size < k; d++) set.add(n + d);
+  return [...set];
+}
 
 // say: okunacak ses parçalarının listesi (audio/<ad>.mp3). Sayılar 'n5' gibi; 0 = kısa duraklama.
 const N = n => 'n' + n;
@@ -336,6 +376,24 @@ const SB = {
         qe.append(box);
       },
       fill() { q.right.classList.add('filled'); },
+    };
+    return q;
+  },
+  hear(s) {
+    const n = s.n, say = numSay(n), vals = hearOpts(n, LEVELS[lv()].options);
+    const cls = vals.some(v => fmtNum(v).length >= 5) ? 'num-long' : '';   // şıklar aynı boyda yazılsın
+    const q = {
+      shape: true, ans: String(n), say, hintSay: say.length > 1 ? numSay(n, true) : [],
+      prompt: 'Hangi sayıyı duydun?', hintText: `${String(n).length} basamaklı`,
+      opts: vals.map(v => [v, () => el('span', cls, fmtNum(v)), String(v)]),
+      draw(qe) {
+        const b = el('button', 'hear-btn', '🔊');
+        b.setAttribute('aria-label', 'Sayıyı dinle');
+        b.onclick = () => $('speakBtn').onclick();
+        q.numEl = el('span', 'hear-num', '?');
+        qe.append(b, q.numEl);
+      },
+      fill() { q.numEl.textContent = fmtNum(n); q.numEl.classList.add('filled'); },
     };
     return q;
   },
@@ -1208,5 +1266,5 @@ renderHome();
 setTimeout(celebrateNext, 600);
 
 // Test ve hata ayıklama için küçük bir kapı (oyunu etkilemez)
-window.__mg = { get screen() { return screen; }, get cur() { return cur; }, get round() { return round; }, startRound, GEN, build, options, Store, approveTask, taskCount, taskState, dayKey, addDays, backupCode, restoreBackup, hashPin };
+window.__mg = { get screen() { return screen; }, get cur() { return cur; }, get round() { return round; }, startRound, GEN, build, options, numSay, Store, approveTask, taskCount, taskState, dayKey, addDays, backupCode, restoreBackup, hashPin };
 })();

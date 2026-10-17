@@ -490,3 +490,12 @@ h1 { color: var(--ink); text-shadow: none; }
   .level { padding: 5px 4px 6px; }
 }
 .shop-dmg { font-size: 15px; color: #C8473B; background: #FDECEA; border-radius: 999px; padding: 0 10px; margin-top: 2px; }
+
+/* Sayıyı Dinle: büyük hoparlör düğmesi, doğru cevapta sayı yazılır */
+.question.hear { flex-direction: column; gap: 10px; }
+.hear-btn { width: clamp(84px, 22vh, 140px); height: clamp(84px, 22vh, 140px); border-radius: 50%; border: 0; background: #FFF6DC; box-shadow: var(--lift), inset 0 0 0 4px #E8A317; font-size: clamp(40px, 11vh, 70px); cursor: pointer; animation: hear-pulse 1.8s ease-in-out infinite; }
+.hear-btn:active { transform: scale(.94); }
+@keyframes hear-pulse { 50% { box-shadow: var(--lift), inset 0 0 0 4px #E8A317, 0 0 0 10px rgba(232, 163, 23, .18); } }
+.hear-num { font-size: clamp(30px, 9vh, 60px); color: #B9C2CF; min-height: 1em; }
+.hear-num.filled { color: var(--ink, #1E2233); }
+.answer .num-long { font-size: .66em; letter-spacing: -.01em; white-space: nowrap; }
