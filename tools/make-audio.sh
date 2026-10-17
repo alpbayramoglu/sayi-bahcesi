@@ -22,6 +22,8 @@ CLIPS=(
   "sekline_bak|Şekline bak." "rengine_bak|Rengine bak." "boyuna_bak|Büyüklüğüne bak."
   # bahçe
   "yeni_arkadas|Bahçene yeni bir arkadaş geldi!"
+  "yeni_akvaryum|Akvaryumuna yeni bir arkadaş geldi!" "yeni_orman|Ormanına yeni bir arkadaş geldi!"
+  "acildi_akvaryum|Yaşasın! Akvaryum açıldı!" "acildi_orman|Yaşasın! Orman açıldı!"
 )
 for n in $(seq 0 100); do CLIPS+=("n$n|$n"); done
 # Sayıyı Dinle: binler (t23 → "yirmi üç bin") ve yüzler (h4 → "dört yüz"); rakamla verilince Yelda doğal okur

@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 18;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v18)
+const VERSION = 19;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v19)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -73,7 +73,34 @@ const SHOP = [
   { key: 'tornado', dmg: "20", desc: "Hortum rakibe doğru seçtiğin adım kadar gider. Suyun ve duvarın üstünden geçer, yakaladığını havaya savurur.", how: "Çantadan seç, kaç adım gideceğini seç, TAMAM.", tip: "Aradaki su yüzünden kurbağanın gidemediği yere hortum gider.", g: 'num', ico: '🌪️', name: 'Hortum', info: 'Su ve duvar durdurmaz', price: 4 },
   { key: 'swap', desc: "En yakın rakibinle ışıltılar içinde yer değiştirirsin.", how: "Çantadan seç, KULLAN.", tip: "Rakip güvenli bir yerdeyse onun yerine sen geç!", g: 'def', ico: '🔄', name: 'Yer Değiştirme', info: 'Rakiple yerini değiştir', price: 4 },
 ];
-const friendsFor = stars => Math.min(FRIENDS.length, Math.floor(stars / STARS_PER_FRIEND) + 1);
+// Dünyalar: bahçe dolunca akvaryum, akvaryum dolunca orman açılır. Yeni dünyada arkadaş daha pahalı (3 → 5 → 8 yıldız),
+// böylece hep bir hedef kalır ama ödül hızı yavaşlar.
+const AQUA = ['🐟', '🐚', '🐠', '🦀', '🪸', '🐡', '🦐', '🐙', '🐢', '🪼', '🦞', '🦑', '🐬', '🦦', '🐧', '🦭', '🦈', '🏰', '🐳', '🧜‍♀️'];
+const FOREST = ['🌲', '🍄', '🐛', '🦌', '🌰', '🐻', '🍁', '🦝', '🪵', '🦫', '🐗', '🦡', '🫐', '🐺', '🦇', '🐼', '🦥', '🦚', '🏕️', '🧚'];
+const WORLDS = [
+  { key: 'garden', name: 'Bahçe', title: 'Bahçem', ico: '🌻', cost: STARS_PER_FRIEND, friends: FRIENDS, to: 'Bahçene', clip: 'yeni_arkadas' },
+  { key: 'aqua', name: 'Akvaryum', title: 'Akvaryumum', ico: '🐠', cost: 5, friends: AQUA, to: 'Akvaryumuna', clip: 'yeni_akvaryum', opened: 'acildi_akvaryum',
+    kinds: { '🐚': 'plant', '🪸': 'plant', '🏰': 'house', '🦀': 'crawl', '🦞': 'crawl', '🦐': 'crawl', '🪼': 'bob', '🐙': 'bob' }, big: ['🐳', '🦈', '🏰', '🐬'] },
+  { key: 'forest', name: 'Orman', title: 'Ormanım', ico: '🌲', cost: 8, friends: FOREST, to: 'Ormanına', clip: 'yeni_orman', opened: 'acildi_orman',
+    kinds: { '🐛': 'slow', '🦥': 'slow', '🦌': 'walk', '🐻': 'walk', '🦝': 'walk', '🦫': 'walk', '🐗': 'walk', '🦡': 'walk', '🐺': 'walk', '🐼': 'walk', '🦚': 'walk',
+      '🦇': 'fly', '🧚': 'fly', '🏕️': 'house' }, big: ['🌲', '🏕️', '🐻'] },
+];
+// Her dünyada kaç arkadaş açık, sıradaki arkadaşa ne kadar yıldız birikti (bahçenin ilk arkadaşı baştan açık)
+function worldState(stars) {
+  const counts = []; let left = stars + WORLDS[0].cost, frontier = -1, have = 0;
+  WORLDS.forEach((w, i) => {
+    const n = Math.min(w.friends.length, Math.floor(left / w.cost));
+    counts.push(n);
+    if (frontier < 0 && n < w.friends.length) { frontier = i; have = left - n * w.cost; left = 0; } else left -= n * w.cost;
+  });
+  return { counts, frontier, have, open: frontier < 0 ? WORLDS.length : frontier + 1 };
+}
+const friendsFor = stars => worldState(stars).counts.reduce((a, b) => a + b, 0);
+// Bütün dünyalar boyunca i. arkadaş
+function friendAt(i) {
+  for (let wi = 0; wi < WORLDS.length; wi++) { const w = WORLDS[wi]; if (i < w.friends.length) return { w, wi, f: w.friends[i] }; i -= w.friends.length; }
+  return null;
+}
 const FLIERS = ['🐝', '🦋', '🐦', '🌈', '🎈'], BIG = ['🌳', '🏡', '🌈'];
 // Bahçe sahnesindeki yerler (% olarak, sol-üst): çimen 3 sıra, gökyüzü 1 sıra; sıra karışık ki bahçe dengeli dolsun.
 const GROUND_SLOTS = [[50, 70], [22, 62], [78, 64], [36, 80], [64, 82], [8, 76], [92, 78], [30, 60], [70, 58],
@@ -526,7 +553,7 @@ function renderHome() {
   $('warSub').textContent = Store.d.tickets > 0 ? `🎟️ ${Store.d.tickets} bilet` : '🎟️ yok';
   $('warBtn').classList.toggle('no-ticket', !(Store.d.tickets > 0));
   $('gardenSub').textContent = `★ ${Store.d.stars}`;
-  $('gardenDot').hidden = !(friendsFor(Store.d.stars) > Store.d.seen);
+  $('gardenDot').hidden = !(friendsFor(Store.d.stars) > Store.d.seen || worldState(Store.d.stars).open > (Store.d.worldSeen || 1));
   $('shopSub').textContent = `🪙 ${Store.d.coins}`;
   const doable = Store.d.tasks.filter(t => taskState(t) === 'open').length;
   $('taskBadge').hidden = !doable; $('taskBadge').textContent = doable;
@@ -1066,11 +1093,13 @@ function finish() {
   const s = round.score, stars = s >= 9 ? 3 : s >= 7 ? 2 : 1;
   const key = `${mode}-${lv()}`;
   const prevBest = Store.d.best[key] || 0;
-  const before = friendsFor(Store.d.stars);
+  const before = friendsFor(Store.d.stars), wBefore = worldState(Store.d.stars).open;
   Store.d.stars += stars;
-  const after = friendsFor(Store.d.stars), nw = $('endNew');
-  nw.hidden = after <= before; nw.innerHTML = '';
-  if (after > before) nw.append(el('b', '', FRIENDS[after - 1]), el('span', '', 'Bahçene yeni arkadaş!'));
+  const after = friendsFor(Store.d.stars), wAfter = worldState(Store.d.stars).open, nw = $('endNew');
+  const newWorld = wAfter > wBefore ? WORLDS[wAfter - 1] : null, nf = after > before ? friendAt(after - 1) : null;
+  nw.hidden = !newWorld && !nf; nw.innerHTML = '';
+  if (newWorld) nw.append(el('b', '', newWorld.ico), el('span', '', `${newWorld.name} açıldı!`));
+  else if (nf) nw.append(el('b', '', nf.f), el('span', '', `${nf.w.to} yeni arkadaş!`));
   Store.d.best[key] = Math.max(Store.d.best[key] || 0, stars);
   Store.save();
   const es = $('endStars'); es.innerHTML = '';
@@ -1087,7 +1116,7 @@ function finish() {
   loot.append(el('span', 'chip', `+${coins} 🪙`), el('span', 'chip', ticket ? '+1 🎟️' : `🎟️ ${TICKET_MAX}/${TICKET_MAX}`));
   show('end');
   Sound.play('win'); confetti(40);
-  Voice.say(after > before ? [clip, 0, 0, 'yeni_arkadas'] : [clip], .9);
+  Voice.say(newWorld ? [clip, 0, 0, newWorld.opened] : nf ? [clip, 0, 0, nf.w.clip] : [clip], .9);
 }
 
 /* ----- Bahçe ----- */
@@ -1102,25 +1131,48 @@ const G_NAME = {
   '🌳': 'Ağaç', '🐌': 'Salyangoz', '🐦': 'Kuş', '🌸': 'Kiraz Çiçeği', '🐇': 'Tavşan', '🍓': 'Çilek', '🦔': 'Kirpi', '🐢': 'Kaplumbağa',
   '🌈': 'Gökkuşağı', '🐿️': 'Sincap', '🐸': 'Kurbağa', '🌺': 'Ebegümeci', '🦊': 'Tilki', '🐥': 'Civciv', '🦉': 'Baykuş', '🍎': 'Elma',
   '🐑': 'Kuzu', '🦄': 'Tek Boynuzlu At', '🌵': 'Kaktüs', '🐠': 'Balık', '🎈': 'Balon', '🏡': 'Ev',
+  // akvaryum
+  '🐟': 'Balık', '🐚': 'Deniz Kabuğu', '🦀': 'Yengeç', '🪸': 'Mercan', '🐡': 'Balon Balığı', '🦐': 'Karides', '🐙': 'Ahtapot',
+  '🪼': 'Denizanası', '🦞': 'Istakoz', '🦑': 'Kalamar', '🐬': 'Yunus', '🦦': 'Su Samuru', '🐧': 'Penguen', '🦭': 'Fok', '🦈': 'Köpekbalığı',
+  '🏰': 'Kale', '🐳': 'Balina', '🧜‍♀️': 'Deniz Kızı',
+  // orman
+  '🌲': 'Çam', '🐛': 'Tırtıl', '🦌': 'Geyik', '🌰': 'Kestane', '🐻': 'Ayı', '🍁': 'Akçaağaç', '🦝': 'Rakun', '🪵': 'Kütük', '🦫': 'Kunduz',
+  '🐗': 'Yaban Domuzu', '🦡': 'Porsuk', '🫐': 'Yaban Mersini', '🐺': 'Kurt', '🦇': 'Yarasa', '🐼': 'Panda', '🦥': 'Tembel Hayvan',
+  '🦚': 'Tavus Kuşu', '🏕️': 'Kamp', '🧚': 'Peri',
 };
+// Akvaryumun dibi: kabuk, mercan ve kale kumun üstünde durur
+const AQUA_FLOOR = [[50, 88], [20, 86], [80, 87], [35, 90], [65, 90], [8, 88], [92, 88], [28, 84], [72, 84]];
 let gardenRaf = 0, gardenEnts = [];
 const gardenData = () => (Store.d.garden = Store.d.garden || { last: null, streak: 0 });
 const daysSince = k => k ? Math.round((fromKey(dayKey()) - fromKey(k)) / 864e5) : Infinity;
-function renderGarden() {
-  const stars = Store.d.stars, open = friendsFor(stars), fresh = Store.d.seen, gd = gardenData();
-  const thirsty = daysSince(gd.last) >= 2;
+let gardenView = null;   // görüntülenen dünya
+function renderGarden(view) {
+  const stars = Store.d.stars, ws = worldState(stars), fresh = Store.d.seen, gd = gardenData();
+  const total = ws.counts.reduce((a, b) => a + b, 0), wSeen = Store.d.worldSeen || 1;
+  const nf = total > fresh ? friendAt(total - 1) : null, newWorld = ws.open > wSeen ? ws.open - 1 : -1;
+  // Açılış: yeni arkadaşın ya da yeni dünyanın olduğu yer, yoksa en son bakılan, o da yoksa en son açılan dünya
+  if (view == null) view = newWorld >= 0 ? newWorld : nf ? nf.wi : gardenView != null && gardenView < ws.open ? gardenView : ws.open - 1;
+  gardenView = view;
+  const W = WORLDS[view], offset = WORLDS.slice(0, view).reduce((a, w) => a + w.friends.length, 0);
+  $('gardenScene').className = 'garden-scene w-' + W.key;
+  $('gardenTitle').textContent = W.title;
+  const thirsty = view === 0 && daysSince(gd.last) >= 2;
   $('gardenStars').textContent = stars;
   const g = $('gardenGrid'); g.innerHTML = ''; gardenEnts = [];
   let plant = 0, sky = 0;
-  FRIENDS.slice(0, open).forEach((f, i) => {
-    const kind = G_KIND[f] || 'plant', isNew = i >= fresh;
-    const b = el('button', 'friend ' + kind + (BIG.includes(f) ? ' big' : '') + (kind === 'plant' && thirsty ? ' thirsty' : ''), f);
+  W.friends.slice(0, ws.counts[view]).forEach((f, i) => {
+    const kind = (W.kinds ? W.kinds[f] || (view === 1 ? 'swim' : 'plant') : G_KIND[f] || 'plant'), isNew = offset + i >= fresh;
+    const big = (W.big || BIG).includes(f);
+    const b = el('button', 'friend ' + kind + (big ? ' big' : '') + (kind === 'plant' && thirsty ? ' thirsty' : ''), f);
     b.setAttribute('aria-label', G_NAME[f] || 'Arkadaş');
     const e = { el: b, f, kind, ph: rand(0, 6), x: 50, y: 70, vx: 0, flip: 1 };
-    if (kind === 'plant' || kind === 'house') { [e.x, e.y] = GROUND_SLOTS[plant++ % GROUND_SLOTS.length]; }
+    if (kind === 'plant' || kind === 'house') { [e.x, e.y] = (view === 1 ? AQUA_FLOOR : GROUND_SLOTS)[plant++ % (view === 1 ? AQUA_FLOOR : GROUND_SLOTS).length]; }
     else if (kind === 'fly' || kind === 'float') { [e.x, e.y] = SKY_SLOTS[sky++ % SKY_SLOTS.length]; e.cx = e.x; e.cy = e.y; }
+    else if (kind === 'bob') { [e.x, e.y] = [[22, 34], [74, 28], [48, 46], [88, 50]][sky++ % 4]; }
     else if (kind === 'sky') { e.x = 80; e.y = 30; }
     else if (kind === 'pond') { e.x = 18; e.y = 86; e.vx = 4; }
+    else if (kind === 'swim') { e.x = rand(12, 88); e.y = [22, 34, 46, 58, 68][i % 5]; e.vx = rand(3, 8) * (Math.random() < .5 ? -1 : 1); }
+    else if (kind === 'crawl') { e.x = rand(12, 88); e.y = [86, 90][i % 2]; e.vx = 3 * (Math.random() < .5 ? -1 : 1); }
     else { e.x = rand(12, 88); e.y = [64, 72, 80, 88][i % 4]; e.vx = (kind === 'slow' ? 2.2 : kind === 'hop' ? 7 : 5) * (Math.random() < .5 ? -1 : 1); }
     // yeni gelen arkadaş kenardan içeri girer
     if (isNew && e.vx) { e.x = e.vx > 0 ? -6 : 106; }
@@ -1132,21 +1184,38 @@ function renderGarden() {
     };
     g.append(b); gardenEnts.push(e);
   });
-  // yeni arkadaş duyurusu
+  // dünyalar arası sekmeler: açık olanlar gezilir, sıradaki kilitli görünür (hedef)
+  const tabs = $('gardenTabs'); tabs.innerHTML = '';
+  WORLDS.forEach((w, i) => {
+    if (i > ws.open) return;
+    const locked = i >= ws.open, t = el('button', 'g-tab' + (i === view ? ' on' : '') + (locked ? ' locked' : ''), locked ? '🔒' : w.ico);
+    t.setAttribute('aria-label', w.name);
+    t.onclick = () => {
+      Sound.play('tap');
+      if (!locked) { renderGarden(i); return; }
+      const bub = el('div', 'g-bubble', `${WORLDS[i - 1].name} dolunca açılır`); bub.style.left = '50%'; bub.style.top = '24%';
+      $('gardenGrid').append(bub); setTimeout(() => bub.remove(), 1800);
+    };
+    tabs.append(t);
+  });
+  // duyuru: yeni dünya ya da yeni arkadaş
   const ban = $('gardenBanner');
-  if (open > fresh) {
-    ban.hidden = false; ban.textContent = `Yeni arkadaş: ${FRIENDS[open - 1]} ${G_NAME[FRIENDS[open - 1]] || ''}!`;
+  if (newWorld === view) {
+    ban.hidden = false; ban.textContent = `${W.ico} ${W.name} açıldı!`;
+    Sound.play('win'); confetti(30); Voice.say([W.opened], .3); setTimeout(() => { ban.hidden = true; }, 3200);
+  } else if (nf && nf.wi === view) {
+    ban.hidden = false; ban.textContent = `Yeni arkadaş: ${nf.f} ${G_NAME[nf.f] || ''}!`;
     Sound.play('win'); setTimeout(() => { ban.hidden = true; }, 3200);
   } else ban.hidden = true;
   const nx = $('gardenNext'); nx.innerHTML = '';
-  if (open >= FRIENDS.length) nx.append(el('span', '', 'Hepsi senin! 🎉'));
+  if (view !== ws.frontier) nx.append(el('span', '', 'Hepsi senin! 🎉'));
   else {
-    const have = stars % STARS_PER_FRIEND, bar = el('span', 'bar'), fill = el('i'), next = el('span', 'shadow', FRIENDS[open]);
-    fill.style.width = (have / STARS_PER_FRIEND * 100) + '%'; bar.append(fill);
-    nx.append(el('span', 'star', '★'), bar, el('span', '', `${have}/${STARS_PER_FRIEND}`), next);   // sıradaki arkadaşın gölgesi
+    const have = ws.have, bar = el('span', 'bar'), fill = el('i'), next = el('span', 'shadow', W.friends[ws.counts[view]]);
+    fill.style.width = (have / W.cost * 100) + '%'; bar.append(fill);
+    nx.append(el('span', 'star', '★'), bar, el('span', '', `${have}/${W.cost}`), next);   // sıradaki arkadaşın gölgesi
   }
   renderWater();
-  Store.d.seen = open; Store.save();
+  Store.d.seen = Math.max(fresh, total); Store.d.worldSeen = Math.max(wSeen, ws.open); Store.save();
   cancelAnimationFrame(gardenRaf);
   let last = performance.now();
   const loop = now => {
@@ -1160,12 +1229,18 @@ function renderGarden() {
 function gardenStep(e, dt, t) {
   let tx = 0, ty = 0, rot = 0, sx = 1;
   const k = e.kind;
-  if (k === 'walk' || k === 'slow' || k === 'hop') {
+  if (k === 'swim') {
+    e.x += e.vx * dt;
+    if (e.x < 6 && e.vx < 0 || e.x > 94 && e.vx > 0) e.vx = -e.vx;
+    if (Math.random() < dt * .1) e.vx = -e.vx;
+    sx = e.vx > 0 ? -1 : 1; ty = Math.sin(t * 1.6 + e.ph) * 7; rot = Math.sin(t * 3 + e.ph) * 4;
+  } else if (k === 'bob') { ty = Math.sin(t * 1.1 + e.ph) * 14; rot = Math.sin(t * 1.7 + e.ph) * 5; }
+  else if (k === 'walk' || k === 'slow' || k === 'hop' || k === 'crawl') {
     e.x += e.vx * dt;
     if (e.x < 6 && e.vx < 0 || e.x > 94 && e.vx > 0) e.vx = -e.vx;
     if (Math.random() < dt * .15) e.vx = -e.vx;   // ara ara fikrini değiştirir
     sx = e.vx > 0 ? -1 : 1;
-    ty = k === 'hop' ? -Math.abs(Math.sin(t * 4 + e.ph)) * 16 : -Math.abs(Math.sin(t * (k === 'slow' ? 3 : 9) + e.ph)) * 3;
+    ty = k === 'hop' ? -Math.abs(Math.sin(t * 4 + e.ph)) * 16 : -Math.abs(Math.sin(t * (k === 'slow' || k === 'crawl' ? 3 : 9) + e.ph)) * 3;
   } else if (k === 'fly') {
     const px = e.x; e.x = e.cx + Math.sin(t * .5 + e.ph) * 20; e.y = e.cy + Math.sin(t * 1.4 + e.ph) * 6;
     sx = e.x > px ? -1 : 1; rot = Math.sin(t * 12 + e.ph) * 6;
@@ -1180,7 +1255,10 @@ function gardenStep(e, dt, t) {
 function renderWater() {
   const gd = gardenData(), done = gd.last === dayKey(), btn = $('waterBtn');
   btn.disabled = done; btn.classList.toggle('done', done);
-  btn.querySelector('b').textContent = done ? 'Yarın' : 'Sula';
+  const aqua = gardenView === 1;
+  btn.firstChild.textContent = aqua ? '🍤' : '💧';
+  btn.setAttribute('aria-label', aqua ? 'Balıkları besle' : 'Bahçeyi sula');
+  btn.querySelector('b').textContent = done ? 'Yarın' : aqua ? 'Yemle' : 'Sula';
   const live = gd.last === dayKey() || gd.last === addDays(dayKey(), -1);
   $('gardenStreak').textContent = live && gd.streak > 1 ? `🔥 ${gd.streak} gün` : '';
 }
@@ -1192,12 +1270,13 @@ function waterGarden() {
   Store.d.coins += 1 + bonus; Store.save();
   Sound.play('right');
   const rain = $('gardenRain');
+  rain.classList.toggle('food', gardenView === 1);   // akvaryumda yağmur yerine yem taneleri
   for (let i = 0; i < 46; i++) {
     const d = el('i'); d.style.left = rand(0, 100) + '%'; d.style.animationDelay = rand(0, 1.1) + 's'; d.style.animationDuration = rand(.6, 1) + 's';
     rain.append(d); setTimeout(() => d.remove(), 2400);
   }
   setTimeout(() => {
-    for (const e of gardenEnts) if (e.kind === 'plant') { e.el.classList.remove('thirsty'); e.el.classList.remove('grow'); void e.el.offsetWidth; e.el.classList.add('grow'); }
+    for (const e of gardenEnts) if (e.kind === 'plant' || (gardenView === 1 && e.kind === 'swim')) { e.el.classList.remove('thirsty'); e.el.classList.remove('grow'); void e.el.offsetWidth; e.el.classList.add('grow'); }
     Sound.play('win'); cheer(`+${1 + bonus} 🪙`); confetti(16);
   }, 1300);
   renderWater();
@@ -1266,5 +1345,5 @@ renderHome();
 setTimeout(celebrateNext, 600);
 
 // Test ve hata ayıklama için küçük bir kapı (oyunu etkilemez)
-window.__mg = { get screen() { return screen; }, get cur() { return cur; }, get round() { return round; }, startRound, GEN, build, options, numSay, Store, approveTask, taskCount, taskState, dayKey, addDays, backupCode, restoreBackup, hashPin };
+window.__mg = { get screen() { return screen; }, get cur() { return cur; }, get round() { return round; }, startRound, GEN, build, options, numSay, worldState, friendAt, renderGarden, Store, approveTask, taskCount, taskState, dayKey, addDays, backupCode, restoreBackup, hashPin };
 })();
