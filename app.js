@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 16;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v16)
+const VERSION = 17;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v17)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -44,13 +44,12 @@ const TICKET_MAX = 3;
 const SHOP_GROUPS = [['throw', 'Atılanlar'], ['num', 'Sayılı'], ['def', 'Destek']];
 const SHOP = [
   { key: 'balloon', dmg: "37", desc: "Patlayınca her yer su olur. Çarptığı yerde büyük bir çukur açar, rakibi ıslatır.", how: "Çantadan seç, parmağını geri çek, bırak.", tip: "Rüzgârdan çok etkilenir: rüzgâr okuna bak!", g: 'throw', ico: '💦', name: 'Su Balonu', info: 'Büyük patlar', price: 1 },
-  { key: 'paint', dmg: "32", desc: "Yere çarpınca bir kez zıplar, sonra patlar ve etrafı pembeye boyar.", how: "Çantadan seç, geri çek, bırak.", tip: "Zıpladığı için rakibin biraz önüne nişan al.", g: 'throw', ico: '🎨', name: 'Boya Küpü', info: 'Zıplar, boyar', price: 2 },
   { key: 'fish', dmg: "37", desc: "Çok hafif uçar, neredeyse dümdüz gider. Uzaktaki rakibe yetişir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu pek itemez.", g: 'throw', ico: '🐟', name: 'Balık', info: 'Dümdüz uçar', price: 3 },
-  { key: 'bigball', dmg: "52", desc: "Kocaman ve ağır bir kartopu. Kısa gider ama büyük bir çukur açar, rakibin başı döner.", how: "Çantadan seç, güçlü çek, bırak.", tip: "Ağır olduğu için yakındaki rakibe at.", g: 'throw', ico: '⚪', name: 'Dev Kartopu', info: 'Ağır, kocaman çukur', price: 2 },
-  { key: 'bouncy', dmg: "28", desc: "Üç kez seker, sonra rengârenk patlar.", how: "Çantadan seç, geri çek, bırak.", tip: "Duvarın arkasındaki rakibe sektirerek ulaşabilirsin.", g: 'throw', ico: '🥎', name: 'Zıp Zıp Top', info: 'Üç kez seker', price: 2 },
-  { key: 'melon', dmg: "49", desc: "Çarpınca dört dilime ayrılır, her dilim ayrıca patlar.", how: "Çantadan seç, geri çek, bırak.", tip: "Rakibin tam üstüne düşerse dilimler etrafa saçılır.", g: 'throw', ico: '🍉', name: 'Karpuz', info: 'Dört dilime ayrılır', price: 3 },
+  { key: 'bigball', dmg: "52", desc: "Kocaman ve ağır bir kartopu. Kısa gider ama büyük bir çukur açar, rakibin başı döner.", how: "Çantadan seç, güçlü çek, bırak.", tip: "Ağır olduğu için yakındaki rakibe at.", g: 'throw', ico: '⚪', name: 'Dev Kartopu', info: 'Ağır, kocaman çukur', price: 6 },
+  { key: 'melon', dmg: "49", desc: "Çarpınca dört dilime ayrılır, her dilim ayrıca patlar.", how: "Çantadan seç, geri çek, bırak.", tip: "Rakibin tam üstüne düşerse dilimler etrafa saçılır.", g: 'throw', ico: '🍉', name: 'Karpuz', info: 'Dört dilime ayrılır', price: 6 },
+  { key: 'firework', dmg: "6 yıldız × 10", desc: "Havada en yükseğe çıkınca PATT! diye renk renk patlar, altı yıldız aşağı yağar.", how: "Çantadan seç, geri çek, bırak.", tip: "Rakibin tam üstünde patlaması için yukarı doğru at.", g: 'throw', ico: '🧨', name: 'Havai Fişek', info: 'Gökte patlar, yıldız yağar', price: 5 },
+  { key: 'volcano', dmg: "5 taş × 12", desc: "Düştüğü yerde küçük bir yanardağ çıkar. Gürler, sonra etrafa beş lav taşı fışkırtır.", how: "Çantadan seç, geri çek, bırak.", tip: "Rakibin yakınına düşür, taşlar her yöne uçar.", g: 'throw', ico: '🌋', name: 'Yanardağ', info: 'Lav taşları fışkırtır', price: 6 },
   { key: 'boomerang', dmg: "32", desc: "Uçar uçar, sonra geri döner. Arkadaki rakibi bile vurabilir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu çok iter.", g: 'throw', ico: '🪃', name: 'Bumerang', info: 'Geri döner', price: 3 },
-  { key: 'cake', dmg: "16", desc: "Rakibin yüzüne krema yapışır. Bir sonraki turunda yürüyemez!", how: "Çantadan seç, geri çek, bırak.", tip: "Kaçmaya çalışan rakibe at.", g: 'throw', ico: '🎂', name: 'Pasta', info: 'Rakip bir tur yürüyemez', price: 3 },
   { key: 'tickle', dmg: "7", desc: "Çok az acıtır ama çok güldürür. Rakip gülmekten kayar.", how: "Çantadan seç, geri çek, bırak.", tip: "Uçurumun kenarındaki rakibi suya kaydırabilir!", g: 'throw', ico: '🪶', name: 'Gıdıklama Tüyü', info: 'Hihi! Rakibi kaydırır', price: 1 },
   { key: 'pepper', dmg: "20", desc: "Rakip biberin tozunu yutar, önce \"ha... ha...\" der, sonra HAPŞU! diye geriye uçar.", how: "Çantadan seç, geri çek, bırak.", tip: "Suya yakın rakibe at.", g: 'throw', ico: '🌶️', name: 'Hapşırık Biberi', info: 'Rakibi uçurur', price: 3 },
   { key: 'clock', dmg: "31", desc: "Çalar saati sen kurarsın: kaç saniye sonra çalacağını seçersin. Seker, yuvarlanır, zamanı gelince çalar.", how: "Çantadan seç, ⏰ ile saniyeyi ayarla, geri çek, bırak.", tip: "Rakibin yanına yuvarlanması için az güçle at.", g: 'num', ico: '⏰', name: 'Çalar Saat', info: 'Kaç saniye sonra?', price: 3 },
@@ -58,12 +57,13 @@ const SHOP = [
   { key: 'chicken', dmg: "25", desc: "Tavuk rakibe doğru koşar. Kaç adım koşacağını sen seçersin; her adım cetvelde bir sayı.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Yüksek duvar görürse orada patlar.", g: 'num', ico: '🐔', name: 'Koşan Tavuk', info: 'Kaç adım koşsun?', price: 3 },
   { key: 'bugs', dmg: "3 × 16", desc: "Uçak, seçtiğin sayının üstünden uğur böcekleri bırakır. Rüzgâr böcekleri iter!", how: "Çantadan seç, cetvelden sayıyı seç, TAMAM.", tip: "Rüzgâr +2 ise böcekler 2 sağa kayar. Kedi 9’daysa 7’yi seç!", g: 'num', ico: '🐞', name: 'Böcek Uçağı', info: 'Sayıyı seç, rüzgârı ekle', price: 5 },
   { key: 'meteor', dmg: "5 × 24", desc: "Gökten taşlar yağar. İki sayı seçersin, aradaki her sayıya bir taş düşer.", how: "Çantadan seç, iki sayıyı ayarla, TAMAM.", tip: "En fazla 5 sayılık bir aralık seçebilirsin.", g: 'num', ico: '☄️', name: 'Meteor Yağmuru', info: 'Bu sayıdan şu sayıya', price: 7 },
+  { key: 'dragon', dmg: "30", desc: "Ejderha uçarak gelir, seçtiğin sayının yanında durur ve ateş püskürür. Rüzgâr ona işlemez.", how: "Çantadan seç, cetvelden sayıyı seç, TAMAM.", tip: "Kedinin altındaki sayıyı seç, ateş tam ona gider.", g: 'num', ico: '🐉', name: 'Ejderha', info: 'Ateş püskürür', price: 7 },
   { key: 'teleport', desc: "Pıt! diye seçtiğin sayıya ışınlanırsın.", how: "Çantadan seç, cetvelden sayıyı seç, TAMAM.", tip: "Suyun üstüne ışınlanamazsın.", g: 'num', ico: '✨', name: 'Işınlanma', info: 'Bir sayıya ışınlan', price: 4 },
   { key: 'flyballoon', desc: "Balon seni havaya kaldırır ve seçtiğin sayıya götürür. Ama rüzgâr seni biraz daha iter!", how: "Çantadan seç, sayıyı seç, TAMAM.", tip: "Rüzgâr −1 ise 1 sola inersin. Hesapla!", g: 'num', ico: '🎈', name: 'Uçan Balon', info: 'Rüzgârla uç', price: 3 },
   { key: 'wall', desc: "Önüne kardan bir duvar örer. Kaç blok yüksek olacağını sen seçersin.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Duvarın arkasına saklan, kartoplar çarpsın.", g: 'num', ico: '🧱', name: 'Kardan Duvar', info: 'Kaç blok yüksek?', price: 2 },
   { key: 'bridge', desc: "Önüne tahtadan bir köprü kurar. Kaç blok uzun olacağını sen seçersin.", how: "Çantadan seç, sayıyı ayarla, TAMAM.", tip: "Suyun üstünden geçmek için köprü kur, sonra yürü.", g: 'num', ico: '🌉', name: 'Sayı Köprüsü', info: 'Kaç blok uzun?', price: 2 },
   { key: 'umbrella', dmg: "isabeti yutar", desc: "Bir tur boyunca seni korur. İlk isabet şemsiyeye çarpar.", how: "Çantadan seç, KULLAN.", tip: "Gücün azaldıysa kullan.", g: 'def', ico: '☂️', name: 'Şemsiye', info: 'Bir tur kalkan', price: 3 },
-  { key: 'chute', desc: "Yüksekten düşerken kendiliğinden açılır, yavaşça inersin.", how: "Çantanda olması yeter, kendisi çalışır.", tip: "Kale ve gemilerde çok işe yarar.", g: 'def', ico: '🪂', name: 'Paraşüt', info: 'Düşerken açılır', price: 2 },
+  { key: 'chute', dmg: "su hasarı yok", desc: "Suya düşersen açılır ve seni karaya süzülerek indirir, hiç güç kaybetmezsin. Yüksekten düşerken de açılır.", how: "Çantanda olması yeter, kendisi çalışır.", tip: "Korsan Koyu'nda rakip seni suya iterse kurtarır.", g: 'def', ico: '🪂', name: 'Paraşüt', info: 'Sudan kurtarır', price: 3 },
   { key: 'potion', dmg: "+35 güç", desc: "Gücünü 35 artırır. Turun bitmez, sonra atış da yapabilirsin.", how: "Çantadan seç, KULLAN.", tip: "Gücün tam doluysa kullanılamaz.", g: 'def', ico: '🧪', name: 'Güç İksiri', info: '+35 güç', price: 7 },
   { key: 'skunk', dmg: "10 + turda 8", desc: "Patladığı yerde yeşil bir koku bulutu kalır. Bulut 3 tur durur; içinde turuna başlayan rakip öksürür ve 8 güç kaybeder.", how: "Çantadan seç, geri çek, bırak.", tip: "Rakibin durduğu yere at, oradan kaçmazsa her tur öksürür.", g: 'throw', ico: '🦨', name: 'Kokarca', info: 'Koku bulutu bırakır', price: 4 },
   { key: 'hive', dmg: "4 × 6", desc: "Patlayınca içinden 4 arı çıkar. Arılar en yakın rakibi kovalayıp sokar, her biri 6 güç götürür.", how: "Çantadan seç, geri çek, bırak.", tip: "Rakibin yakınına düşmesi yeter, arılar onu bulur.", g: 'throw', ico: '🐝', name: 'Arı Kovanı', info: 'Arılar rakibi kovalar', price: 5 },
@@ -89,6 +89,11 @@ const Store = {
   save() { try { localStorage.setItem(this.key, JSON.stringify(this.d)); } catch (e) {} },
 };
 Store.load();
+// v17: Boya Küpü, Zıp Zıp Top ve Pasta dükkândan kalktı; eldekilerin parası geri verilir
+for (const [k, price] of Object.entries({ paint: 2, bouncy: 2, cake: 3 })) {
+  const n = Store.d.inv[k] || 0;
+  if (n > 0) { Store.d.coins += n * price; delete Store.d.inv[k]; Store.save(); }
+}
 
 /* ================= Soru üretimi ================= */
 const GEN = {
@@ -193,6 +198,8 @@ const SHAPE_SVG = {
   diamond: '<path d="M50 8 L88 50 L50 92 L12 50 Z"/>',
 };
 const SHAPES = Object.keys(SHAPE_SVG), COLS = Object.keys(COLORS);
+// Zor 'Farklı Olan': ilk bakışta karışan çiftler
+const ODD_NEAR = { shape: [['square', 'diamond'], ['circle', 'heart'], ['star', 'diamond']], color: [['red', 'orange'], ['blue', 'purple'], ['yellow', 'orange'], ['green', 'blue']] };
 const SUD = [['circle', 'red'], ['square', 'blue'], ['triangle', 'yellow'], ['star', 'green']];
 const sample = (a, n) => shuffle([...a]).slice(0, n);
 const itemKey = ([sh, co, sm]) => `${sh}-${co}${sm ? '-s' : ''}`;
@@ -232,15 +239,30 @@ Object.assign(GEN, {
     }
   },
   odd(lv) {
-    const rule = pick(lv === 3 ? ['shape', 'color', 'size'] : ['shape', 'color']);
-    const val = { shape: sample(SHAPES, 2), color: sample(COLS, 2), size: [0, 1] };
-    const items = [0, 1, 2, 3].map(() => ({ shape: val.shape[0], color: val.color[0], size: 0 }));
-    const odd = rnd(0, 3);
-    items[odd][rule] = val[rule][1];
-    // Önemsiz özellikler 2+2 dağılır; böylece hiçbiri tek başına bir öğeyi öne çıkarmaz, kural tek kalır.
-    const vary = lv === 1 ? [] : ['shape', 'color', 'size'].filter(a => a !== rule && (a !== 'size' || lv === 3));
-    for (const a of vary) { const v = shuffle([val[a][0], val[a][0], val[a][1], val[a][1]]); items.forEach((it, i) => { it[a] = v[i]; }); }
-    return { t: 'odd', rule, odd, items: items.map(it => [it.shape, it.color, it.size]) };
+    // Kolay 6 kart (3×2), Orta ve Zor 9 kart (3×3). Kural tek bir özellikte: biri farklı, gerisi aynı.
+    const n = lv === 1 ? 6 : 9;
+    const rule = pick(lv === 1 ? ['shape', 'color'] : ['shape', 'color', 'size']);
+    let pair;
+    if (rule === 'size') pair = shuffle([0, 1]);
+    else if (lv === 3 && Math.random() < .7) pair = shuffle([...pick(ODD_NEAR[rule])]);   // Zor: birbirine benzeyen iki değer
+    else pair = sample(rule === 'shape' ? SHAPES : COLS, 2);
+    // Önemsiz özellikler de değişir; her değer en az iki kartta olur ki kural dışında tek kalan bir şey çıkmasın.
+    const others = ['shape', 'color'].filter(a => a !== rule);
+    const nv = lv === 1 ? 2 : 3;
+    const vals = {};
+    for (const a of others) vals[a] = sample(a === 'shape' ? SHAPES.filter(v => !pair.includes(v)) : COLS.filter(v => !pair.includes(v)), nv);
+    if (rule !== 'size') vals.size = lv === 3 ? [0, 1] : [0];
+    const spread = vs => shuffle(Array.from({ length: n }, (_, i) => vs[i % vs.length]));
+    const cols = {};
+    for (const a of Object.keys(vals)) cols[a] = spread(vals[a]);
+    const odd = rnd(0, n - 1);
+    const items = Array.from({ length: n }, (_, i) => {
+      const it = { shape: null, color: null, size: 0 };
+      for (const a of Object.keys(cols)) it[a] = cols[a][i];
+      it[rule] = i === odd ? pair[1] : pair[0];
+      return [it.shape, it.color, it.size];
+    });
+    return { t: 'odd', rule, odd, n, items };
   },
   sud(lv) {
     const n = lv === 1 ? 3 : 4, ix = [...Array(n).keys()];
@@ -866,7 +888,7 @@ function render() {
 
   $('answers').innerHTML = '';
   $('answers').className = 'answers' + (q.inStage ? ' hidden' : '');
-  const ans = q.inStage ? el('div', 'stage-answers') : $('answers');
+  const ans = q.inStage ? el('div', 'stage-answers n' + q.opts.length) : $('answers');
   if (q.inStage) qe.append(ans);
   // Sayı sorularında seçenekler metin; şekil sorularında her seçeneğin kendi çizimi var.
   const opts = q.opts ? shuffle([...q.opts]) : options(cur.spec, q, LEVELS[lv()].options).map(v => [v, null, String(v)]);

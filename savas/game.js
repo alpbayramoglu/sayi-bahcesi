@@ -687,22 +687,22 @@ const LEVELS = [
   { island: 0, theme: 'grass', water: 5, h: c => 7 + 4 * Math.cos(2 * Math.PI * c / 54) + 1.2 * Math.sin(c * .9) - (c > 20 && c < 34 ? 1 : 0), p: 8, e: 46, wind: 0, items: ['snowball'], err: .28, preview: 170 },
   { island: 0, theme: 'grass', water: 4, h: c => 6 + 7 * Math.exp(-Math.pow((c - 27) / 6, 2)) + Math.sin(c / 2.5), p: 9, e: 45, wind: 1, items: ['snowball', 'balloon'], err: .22, preview: 140 },
   { island: 1, theme: 'snow', water: 4, h: c => 8 + 3 * Math.sin(c / 5 + 1) + 1.5 * Math.sin(c / 2.1), p: 7, e: 47, wind: 1, items: ['snowball', 'balloon'], err: .18, preview: 120 },
-  { island: 1, theme: 'snow', water: 4, h: c => 7 + 2 * Math.sin(c / 4) + (c >= 22 && c <= 32 ? 7 : 0), p: 10, e: 44, wind: 2, items: ['snowball', 'balloon', 'paint'], err: .14, preview: 100 },
-  { island: 1, theme: 'snow', water: 5, h: c => 5 + 6 * Math.max(0, Math.cos(2 * Math.PI * c / 27)) + 1.5 * Math.sin(c / 2), p: 4, e: 50, wind: 3, items: ['snowball', 'balloon', 'paint'], err: .11, preview: 90 },
+  { island: 1, theme: 'snow', water: 4, h: c => 7 + 2 * Math.sin(c / 4) + (c >= 22 && c <= 32 ? 7 : 0), p: 10, e: 44, wind: 2, items: ['snowball', 'balloon', 'fish'], err: .14, preview: 100 },
+  { island: 1, theme: 'snow', water: 5, h: c => 5 + 6 * Math.max(0, Math.cos(2 * Math.PI * c / 27)) + 1.5 * Math.sin(c / 2), p: 4, e: 50, wind: 3, items: ['snowball', 'balloon', 'firework'], err: .11, preview: 90 },
   // Kale Adası: geniş harita, iki taraf kalelerin üstünde
   { island: 2, theme: 'grass', water: 3, cols: 72, h: c => 6 + 1.2 * Math.sin(c / 5) + .8 * Math.sin(c / 2.3), build: T => { castle(T, 6, 7, 4); castle(T, 59, 7, 4); },
     p: 9, e: 62, wind: 1, items: ['snowball', 'balloon', 'bigball'], err: .2, preview: 130 },
   { island: 2, theme: 'grass', water: 4, cols: 72, h: c => 5 + 6 * Math.exp(-Math.pow((c - 36) / 7, 2)) + Math.sin(c / 3), build: T => { castle(T, 5, 7, 5); castle(T, 60, 7, 5); },
     p: 8, e: 63, wind: 2, items: ['snowball', 'balloon', 'bigball', 'melon'], err: .16, preview: 110 },
   { island: 2, theme: 'snow', water: 4, cols: 72, teams: 2, h: c => 6 + 1.5 * Math.sin(c / 4) + Math.sin(c / 1.7), build: T => { castle(T, 4, 8, 4); castle(T, 32, 8, 3); castle(T, 60, 8, 4); },
-    p: [7, 14], e: [64, 57], wind: 2, items: ['snowball', 'balloon', 'melon', 'paint'], err: .14, preview: 100 },
+    p: [7, 14], e: [64, 57], wind: 2, items: ['snowball', 'balloon', 'melon', 'firework'], err: .14, preview: 100 },
   // Korsan Koyu: iki kıyı arasında deniz, ortada gemiler
-  { island: 3, theme: 'grass', water: 5, cols: 90, h: c => sea(c, 90, 16, 17), build: T => { ship(T, 22, 11); ship(T, 45, 11); },
-    p: 7, e: 48, wind: 2, items: ['snowball', 'balloon', 'fish', 'melon'], err: .14, preview: 100 },
-  { island: 3, theme: 'grass', water: 5, cols: 90, teams: 2, h: c => sea(c, 90, 16, 17), build: T => { ship(T, 22, 11); ship(T, 45, 11); },
-    p: [6, 11], e: [48, 80], wind: 2, items: ['snowball', 'balloon', 'fish', 'melon', 'bugs'], err: .13, preview: 95 },
-  { island: 3, theme: 'snow', water: 5, cols: 90, teams: 3, h: c => sea(c, 90, 18, 18), build: T => { ship(T, 21, 11); ship(T, 37, 10); ship(T, 52, 11); },
-    p: [5, 11, 24], e: [56, 78, 84], wind: 3, items: ['snowball', 'balloon', 'fish', 'melon', 'bugs', 'bigball'], err: .12, preview: 90 },
+  { island: 3, theme: 'grass', water: 5, cols: 90, h: c => sea(c, 90, 16, 17), build: T => { ship(T, 24, 11); ship(T, 55, 11); },
+    p: 31, e: 58, wind: 2, items: ['snowball', 'balloon', 'fish', 'melon'], err: .14, preview: 100 },
+  { island: 3, theme: 'grass', water: 5, cols: 90, teams: 2, h: c => sea(c, 90, 16, 17), build: T => { ship(T, 24, 11); ship(T, 55, 11); },
+    p: [31, 26], e: [58, 63], wind: 2, items: ['snowball', 'balloon', 'fish', 'melon', 'bugs'], err: .13, preview: 95 },
+  { island: 3, theme: 'snow', water: 5, cols: 90, teams: 3, h: c => sea(c, 90, 18, 18), build: T => { ship(T, 20, 11); ship(T, 39, 11); ship(T, 59, 11); },
+    p: [27, 22, 12], e: [62, 67, 77], wind: 3, items: ['snowball', 'balloon', 'fish', 'melon', 'bugs', 'bigball'], err: .12, preview: 90 },
 ];
 const ISLANDS = [
   { name: 'ÇİMEN ADASI', color: '#5DBB4A' }, { name: 'KAR ADASI', color: '#7CC4EA' },
@@ -713,7 +713,7 @@ function mapDef(key) {
   if (key === 'grass') return Object.assign({}, LEVELS[1], { wind: 1, preview: 130 });
   if (key === 'snow') return Object.assign({}, LEVELS[3], { wind: 2, preview: 110 });
   if (key === 'castle') return Object.assign({}, LEVELS[6], { wind: 2, preview: 110, p: [9, 15, 21], e: [62, 56, 50] });
-  if (key === 'pirate') return Object.assign({}, LEVELS[9], { preview: 110, p: [7, 12, 26], e: [48, 79, 84] });
+  if (key === 'pirate') return Object.assign({}, LEVELS[9], { preview: 110, p: [31, 26, 13], e: [58, 63, 76] });
   // sürpriz: her seferinde yeni bir ada
   const th = Math.random() < .5 ? 'grass' : 'snow';
   const a = rand(1, 4), f = rand(3, 7), ph = rand(0, 6);
@@ -729,6 +729,7 @@ function mapDef(key) {
    kind: throw = sapanla atılır · pick = önce bir sayı seçilir · self = hemen kullanılır · passive = kendiliğinden
    Sayılı eşyalar (pick) oyunun içindeki matematik: cetvelde yer bulmak, saymak, rüzgârı hesaba katmak. */
 const SNOW_C = ['#FFFFFF', '#E6F0F8', '#BFD9EE', '#9B6B43'];
+const FW_C = ['#FF5A6E', '#FFD23F', '#4FB3F0', '#7FE05C', '#B8A6FF', '#FFFFFF'], LAVA_C = ['#FF7A45', '#FFB52E', '#E5483B', '#8A5D39'];
 const ITEMS = {
   snowball: { name: 'Kartopu', spr: 'snowball', kind: 'throw', snow: true, r: 26, dmg: 30, wind: .6, word: 'POF!', sound: 'pof', colors: SNOW_C },
   balloon: { name: 'Su Balonu', spr: 'balloon', kind: 'throw', r: 40, dmg: 32, wind: 1.3, word: 'ŞLAP!', sound: 'splash', colors: ['#4FB3F0', '#D6F1FF', '#2E86C9', '#FFFFFF'] },
@@ -757,7 +758,7 @@ const ITEMS = {
   bridge: { name: 'Sayı Köprüsü', emoji: '🌉', kind: 'pick', pick: { type: 'count', min: 2, max: 12, def: 4, label: 'Köprü kaç blok olsun?' } },
   umbrella: { name: 'Şemsiye', emoji: '☂️', kind: 'self', label: 'Şemsiye seni bir tur korur' },
   potion: { name: 'Güç İksiri', emoji: '🧪', kind: 'self', keepTurn: true, label: '+35 güç' },
-  chute: { name: 'Paraşüt', emoji: '🪂', kind: 'passive', label: 'Yüksekten düşünce kendiliğinden açılır' },
+  chute: { name: 'Paraşüt', emoji: '🪂', kind: 'passive', label: 'Suya ya da yüksekten düşünce açılır, seni kurtarır' },
   missile: { name: 'Hedef Füzesi', emoji: '🚀', kind: 'pick', r: 20, dmg: 15, carve: 16, word: 'TAK!', sound: 'pof', colors: ['#E5483B', '#FFD23F', '#FFFFFF'],
     pick: { type: 'pos', label: 'Füze hangi sayıya gitsin?' } },
   storm: { name: 'Yıldırım Bulutu', emoji: '⛈️', kind: 'pick', r: 26, dmg: 25, carve: 18, word: 'ÇAT!', sound: 'thunder', colors: ['#FFE14D', '#FFFFFF', '#9AA4B5'],
@@ -767,6 +768,12 @@ const ITEMS = {
   swap: { name: 'Yer Değiştirme', emoji: '🔄', kind: 'self', label: 'En yakın rakiple yer değiştir' },
   skunk: { name: 'Kokarca', emoji: '🦨', kind: 'throw', r: 32, dmg: 10, noCarve: true, stink: true, wind: .8, word: 'PÖFF!', sound: 'splat', colors: ['#8BC34A', '#C5E1A5', '#558B2F'] },
   hive: { name: 'Arı Kovanı', emoji: '🐝', kind: 'throw', r: 22, dmg: 8, carve: 12, hive: 4, wind: .7, word: 'VIZZZ!', sound: 'buzz', colors: ['#FFD23F', '#1E2233', '#FFFFFF'] },
+  firework: { name: 'Havai Fişek', emoji: '🧨', spin: true, kind: 'throw', r: 22, dmg: 10, wind: .5, apex: 6, word: 'PATT!', sound: 'pop', colors: FW_C },
+  fwstar: { emoji: '⭐', size: 16, r: 22, dmg: 9, carve: 9, wind: .2, word: 'PIT!', sound: 'pof', colors: FW_C, hidden: true },
+  volcano: { name: 'Yanardağ', emoji: '🌋', kind: 'throw', r: 26, dmg: 12, wind: .6, volcano: 5, word: 'GÜRR!', sound: 'thud', colors: LAVA_C },
+  lava: { emoji: '🔥', size: 18, r: 26, dmg: 10, carve: 10, wind: .2, word: 'CIZZ!', sound: 'pof', colors: LAVA_C, hidden: true },
+  dragon: { name: 'Ejderha', emoji: '🐉', kind: 'pick', r: 42, dmg: 30, carve: 26, word: 'ROAAR!', sound: 'thunder', colors: LAVA_C.concat('#FFFFFF'),
+    pick: { type: 'pos', label: 'Ejderha hangi sayıya ateş püskürsün?' } },
   sting: { emoji: '🐝', r: 14, dmg: 6, noCarve: true, word: 'İĞNE!', sound: 'hit', colors: ['#FFD23F', '#1E2233'], hidden: true },
   // yalnızca eylemlerin içinde
   bug: { emoji: '🐞', size: 18, fall: 170, r: 24, dmg: 14, word: 'VIZZ!', sound: 'pof', colors: ['#E5483B', '#1E2233', '#FFFFFF'], hidden: true },
@@ -774,8 +781,9 @@ const ITEMS = {
   rock: { emoji: '☄️', size: 26, fall: 260, r: 26, dmg: 24, word: 'BUM!', sound: 'pof', colors: ['#FF9F43', '#FFD23F', '#8A5D39'], hidden: true },
 };
 for (const k in ITEMS) ITEMS[k].key = k;
-const ITEM_ORDER = ['snowball', 'balloon', 'paint', 'fish', 'bigball', 'bouncy', 'melon', 'boomerang', 'cake', 'tickle', 'pepper', 'skunk', 'hive',
-  'clock', 'frog', 'chicken', 'bugs', 'meteor', 'teleport', 'flyballoon', 'wall', 'bridge', 'umbrella', 'potion', 'chute', 'missile', 'storm', 'tornado', 'swap'];
+// paint, bouncy, cake artık çantada yok (v17); tanımları eski kayıtlar ve efektler için duruyor
+const ITEM_ORDER = ['snowball', 'balloon', 'fish', 'bigball', 'melon', 'firework', 'volcano', 'boomerang', 'tickle', 'pepper', 'skunk', 'hive',
+  'clock', 'frog', 'chicken', 'bugs', 'meteor', 'dragon', 'teleport', 'flyballoon', 'wall', 'bridge', 'umbrella', 'potion', 'chute', 'missile', 'storm', 'tornado', 'swap'];
 const BUYABLE = ITEM_ORDER.filter(k => k !== 'snowball');
 const AI_ITEMS = ['balloon', 'fish', 'bigball', 'melon', 'pepper'];
 
@@ -1247,7 +1255,7 @@ const Wallet = {
   useItem(k) { const d = this.read(); if (d.inv && d.inv[k] > 0) { d.inv[k]--; this.write(d); } },
   addCoins(n) { const d = this.read(); d.coins = (d.coins || 0) + n; this.write(d); },
 };
-const toGarden = () => { location.href = '../'; };
+const toGarden = () => { location.assign(new URL('../', location.href).href); };
 
 /* ================= Oyun durumu ================= */
 let screen = 'title';
@@ -1307,7 +1315,7 @@ function beginMatch(mode, li, mapKey, def) {
   const T = makeMap(def);
   decorate(T, def, mode === '1p' ? (def.island || 0) : MAP_BACKDROP[mapKey] != null ? MAP_BACKDROP[mapKey] : (T.themeKey === 'snow' ? 1 : 0));
   const size = mode === '1p' ? (def.teams || 1) : twoSize, maxHp = HP_MAX;
-  const free = mode === '1p' ? def.items : ['snowball', 'balloon', 'paint'];
+  const free = mode === '1p' ? def.items : ['snowball', 'balloon', 'fish'];
   const teams = [makeTeam(0, false, free), makeTeam(1, mode === '1p', free)];
   play = { teams: [], T };
   [spawnList(def.p, size, 1), spawnList(def.e, size, -1)].forEach((cols, ti) => cols.forEach((c, i) => {
@@ -1318,6 +1326,8 @@ function beginMatch(mode, li, mapKey, def) {
   // Önce bedava olanlar harcanır (free), sonra dükkân stoğu.
   const kid = teams[0]; kid.free = {};
   for (const k of BUYABLE) { kid.free[k] = kid.ammo[k]; kid.ammo[k] += Wallet.inv(k); }
+  // 2 oyuncu: kedi (genelde bir büyük) penguenin çantasının aynısını alır; kedinin harcadığı stoktan düşmez
+  if (mode === '2p') for (const k of BUYABLE) teams[1].ammo[k] = kid.ammo[k];
   parts = []; words = []; shake = 0; fxs = []; stains = [];
   play = {
     mode, li, mapKey, def, T, teams, size, turn: 0, cur: null, phase: 'banner', t: 0,
@@ -1387,7 +1397,7 @@ function updateCam(dt) {
 }
 
 /* ----- Sürpriz kutu: maç başına 2 kez, rastgele bir turun başında uçak bırakır ----- */
-const CRATE_LOOT = [['heart', 22], ['extra', 12], ['fish', 10], ['balloon', 9], ['paint', 7], ['melon', 10], ['bouncy', 10], ['frog', 7], ['bugs', 6], ['umbrella', 7]];   // toplam 100
+const CRATE_LOOT = [['heart', 22], ['extra', 12], ['fish', 10], ['balloon', 9], ['firework', 9], ['melon', 10], ['volcano', 8], ['frog', 7], ['bugs', 6], ['umbrella', 7]];   // toplam 100
 function dropTurns() {
   const a = 2 + Math.floor(rand(0, 3));          // 2.-4. tur
   return [a, a + 2 + Math.floor(rand(0, 3))];    // ilkinden 2-4 tur sonra
@@ -1470,7 +1480,7 @@ function charPhysics(ch, dt) {
   if (ch.fallFrom == null || ch.y < ch.fallFrom) ch.fallFrom = ch.y;
   // Paraşüt: penguen takımının çantasında varsa hızlı düşüşte kendiliğinden açılır
   const team = play.teams[ch.team];
-  if (!ch.chute && ch.vy > 300 && team.ammo.chute > 0 && alive(ch)) { ch.chute = true; useAmmo(team, 'chute'); Sound.play('pickup'); }
+  if (!ch.chute && !ch.calm && ch.vy > 300 && ch.y - ch.fallFrom > FALL_SAFE && team.ammo.chute > 0 && alive(ch)) openChute(ch, team);
   ch.vy = ch.chute ? Math.min(ch.vy + 900 * dt, 75) : Math.min(ch.vy + 900 * dt, 700);
   if (ch.chute) ch.vx = ch.calm ? 0 : play.wind * 14;   // balondan inen süzülür, rüzgâr bir daha itmez
   ch.x = clamp(ch.x + ch.vx * dt, 14, T.w - 14);
@@ -1518,8 +1528,23 @@ function heal(ch, amt) {
   if (got > 0) words.push({ x: ch.x, y: ch.y - 40, word: '+' + got, size: 26, t: 0, color: '#5DDB5A' });
   return got;
 }
+function openChute(ch, team) {
+  ch.chute = true; useAmmo(team, 'chute'); Sound.play('pickup');
+  words.push({ x: ch.x, y: ch.y - 70, word: '🪂', size: 30, t: 0 });
+}
 function splash(ch) {
-  const T = play.T;
+  const T = play.T, team = play.teams[ch.team];
+  // Paraşüt: suya düşen karakteri kurtarır, en yakın karaya süzülerek indirir (su hasarı yok)
+  if (alive(ch) && (ch.chute || team.ammo.chute > 0)) {
+    if (!ch.chute) useAmmo(team, 'chute');
+    Sound.play('pickup');
+    burst('drop', ch.x, T.waterY, 14, { colors: WATER_C, dir: -Math.PI / 2, spread: .5, speed: [100, 240], size: [2, 3.6] });
+    const c = spawnCol(T, ch.spawnCol, ch);
+    ch.x = c * B + B / 2; ch.y = Math.max(40, T.surfaceY(c) - 150); ch.vx = 0; ch.vy = 0; ch.grounded = false;
+    ch.chute = true; ch.calm = true; ch.fallFrom = null; ch.mood = null;
+    words.push({ x: ch.x, y: ch.y - 40, word: '🪂 KURTARDI!', size: 26, t: 0, color: '#7FE0FF' });
+    return;
+  }
   Sound.play('splashBig');
   burst('drop', ch.x, T.waterY, 34, { colors: WATER_C.concat('#FFFFFF'), dir: -Math.PI / 2, spread: .5, speed: [160, 400], size: [2.4, 4.6] });
   ring(ch.x, T.waterY, '#FFFFFF', 46, .5, 4);
@@ -1566,6 +1591,7 @@ function stepProj(p, dt) {
   if (it.spin) p.rot = (p.rot || 0) + dt * 12 * Math.sign(p.vx || 1);
   if (p.x < -60 || p.x > T.w + 60 || p.y > H + 40 || p.t > 12) return { type: 'out' };
   if (p.fuse && p.t >= p.fuse) return { type: 'timer' };
+  if (it.apex && p.vy >= 0 && p.t > .2) return { type: 'apex' };
   for (const ch of allChars()) {
     if (!alive(ch) || ch.team === p.team) continue;
     if (Math.abs(p.x - ch.x) < 15 && p.y > ch.y - 40 && p.y < ch.y) return { type: 'char' };
@@ -1611,6 +1637,7 @@ function hitProj(p, hit, px, py) {
     if (!p.rest) Sound.play('bounce');
     return false;
   }
+  if (hit.type === 'apex') { fireworkBurst(p, p.x, p.y); return true; }
   if (hit.type === 'char' && p.fuse) { p.vx *= -.3; p.vy = -60; return false; }   // saat çarpıp seker, zamanı dolunca çalar
   explode(p, p.x, p.y, hit.type);
   return true;
@@ -1655,9 +1682,88 @@ function explode(p, x, y, kind) {
   if (hitAny && me && me.team === p.team && alive(me) && !me.mood) react(me, 'cheer', { dur: 1 });
   if (it.stink) play.stinks.push({ x, y: Math.min(y, groundY(x)) - 10, team: p.team, turns: 3, t: 0 });
   if (it.hive) play.acts.push(beesAct(p.team, x, y - 6, it.hive));
+  if (it.volcano) play.acts.push(volcanoAct(p.team, x, it.volcano));
+  if (it.apex) fireworkBurst(p, x, y - 10, true);
   if (it.cluster) for (let i = 0; i < it.cluster; i++) {
     play.projs.push(newProj({ x, y: y - 8, vx: rand(-170, 170), vy: rand(-340, -220), item: 'slice', team: p.team, dir0: 1 }));
   }
+}
+
+// Havai fişek: renk renk patlar, yıldızlar aşağı yağar (yere çarparsa da yıldızlarını saçar)
+function fireworkBurst(p, x, y, landed = false) {
+  const n = ITEMS.firework.apex;
+  if (!landed) {
+    Sound.play('pop'); Sound.play('pof'); play.flash = Math.max(play.flash, .2);
+    burst('spark', x, y, 46, { colors: FW_C, g: 50, speed: [90, 300], size: [3, 6], life: [.7, 1.2] });
+    ring(x, y, '#FFD23F', 70, .5, 4); ring(x, y, '#FF5A6E', 46, .4, 3);
+    words.push({ x, y, word: 'PATT!', size: 34, t: 0, color: '#FFD23F' });
+  }
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (i - (n - 1) / 2) * (landed ? .5 : .62);
+    const sp = landed ? 260 : 75;   // havada patlayınca yıldızlar dar bir yelpazeyle aşağı yağar
+    play.projs.push(newProj({ x, y, vx: Math.cos(a) * sp + rand(-20, 20) + (landed ? 0 : p.vx * .3), vy: landed ? Math.sin(a) * sp : rand(-60, 30), item: 'fwstar', team: p.team, dir0: 1 }));
+  }
+}
+// Yanardağ: düştüğü yerde küçük bir dağ yükselir, gürler, sonra lav taşları fışkırtır
+function volcanoAct(team, x, n) {
+  const gy = groundY(x), a = { t: 0, fx: x, shot: 0 };
+  a.step = dt => {
+    a.t += dt;
+    if (a.t > .4 && a.t < 1.3) {
+      shake = Math.max(shake, 1.5);
+      if (Math.random() < dt * 22) burst('smoke', x + rand(-5, 5), gy - 32, 1, { colors: ['#6B6B6B', '#9A9A9A'], g: -40, speed: [10, 40], size: [4, 7], grow: 12, life: [.6, 1], drag: 1 });
+    }
+    if (a.shot < n && a.t >= 1.3 + a.shot * .16) {
+      if (!a.shot) { Sound.play('thunder'); burst('fire', x, gy - 34, 26, { colors: LAVA_C, dir: -Math.PI / 2, spread: .5, g: 300, speed: [120, 320], size: [3, 6] }); }
+      // ilk üç taş en yakın rakibe doğru (biraz saçılarak), kalanlar rastgele
+      const foe = allChars().filter(c => alive(c) && c.team !== team).sort((p, q) => Math.abs(p.x - x) - Math.abs(q.x - x))[0];
+      const vy = rand(-460, -380), tf = 2 * -vy / GRAV;
+      const vx = foe && a.shot < 3 && Math.abs(foe.x - x) < 420 ? (foe.x - x) / tf + rand(-12, 12) : rand(-240, 240);
+      play.projs.push(newProj({ x, y: gy - 38, vx, vy, item: 'lava', team, dir0: 1 }));
+      a.shot++;
+    }
+    return a.shot >= n && a.t > 2.5;
+  };
+  a.draw = () => {
+    const k = Math.min(1, a.t / .4) * (a.t > 2.2 ? Math.max(0, 1 - (a.t - 2.2) / .3) : 1), h = 32 * k;
+    if (h <= 1) return;
+    ctx.beginPath(); ctx.moveTo(x - h * 1.25, gy + 2); ctx.lineTo(x - h * .32, gy - h); ctx.lineTo(x + h * .32, gy - h); ctx.lineTo(x + h * 1.25, gy + 2); ctx.closePath();
+    ctx.fillStyle = '#8A5D39'; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - h * .32, gy - h); ctx.lineTo(x - h * .12, gy - h * .55); ctx.lineTo(x + h * .05, gy - h * .8); ctx.lineTo(x + h * .32, gy - h); ctx.closePath();
+    ctx.fillStyle = a.t > 1.2 ? '#FF7A45' : '#B5562E'; ctx.fill();
+    if (a.t > .4 && a.t < 1.3) text('GÜRR', x, gy - h - 16 - Math.sin(time * 30) * 2, 16, { color: '#FFB52E', lw: 4 });
+  };
+  return a;
+}
+// Ejderha: atanın tarafından uçarak gelir, seçilen sayının yanında durur ve ateş püskürür
+function dragonAct(ch, u, dir) {
+  const tg = targetAt(u, ch.team), team = ch.team, hy = Math.max(60, Math.min(tg.y - 110, 150));
+  const hx = tg.x - dir * 70;
+  const a = { t: 0, x: hx - dir * 460, y: hy - 40, stage: 0, fx: tg.x, blasted: false };
+  Sound.play('whoosh');
+  a.step = dt => {
+    a.t += dt;
+    if (a.stage === 0) {
+      const d = hx - a.x; a.x += Math.sign(d) * Math.min(Math.abs(d), 420 * dt); a.y += (hy - a.y) * Math.min(1, dt * 4);
+      if (Math.abs(d) < 1) { a.stage = 1; a.t = 0; }
+    } else if (a.stage === 1) {
+      const mx = a.x + dir * 22, my = a.y + 6;
+      if (a.t > .15) {   // gökyüzü açık renk: 'fire' (lighter) beyaz görünür, ateş dili normal boyayla çizilir
+        const dir = Math.atan2(tg.y - my, tg.x - mx);
+        burst('smoke', mx, my, 4, { colors: ['#FF7A45', '#FFB52E', '#E5483B'], dir, spread: .2, g: 0, speed: [260, 380], size: [5, 9], grow: 16, life: [.25, .4] });
+        burst('spark', mx, my, 1, { colors: ['#FFE14D', '#FFFFFF'], dir, spread: .3, g: 0, speed: [200, 340], size: [3, 5], life: [.2, .35] });
+      }
+      if (!a.blasted && a.t > .6) { a.blasted = true; blastAt(tg.x, tg.y, 'dragon', team); }
+      if (a.t > 1.2) { a.stage = 2; a.t = 0; }
+    } else {
+      a.x += dir * 420 * dt; a.y -= 160 * dt;
+      if (a.t > 1.1) return true;
+    }
+    a.fx = a.stage === 2 ? tg.x : a.x;
+    return false;
+  };
+  a.draw = () => emojiAt('🐉', a.x, a.y + Math.sin(time * 9) * 4, 66, 0, dir > 0);
+  return a;
 }
 
 /* ----- Sayılı eşyaların eylemleri -----
@@ -1927,6 +2033,7 @@ function usePick() {
   else if (k === 'flyballoon') play.acts.push(balloonAct(ch, pk.val));
   else if (k === 'missile') play.acts.push(missileAct(ch, pk.val));
   else if (k === 'storm') play.acts.push(stormAct(ch.team, pk.val));
+  else if (k === 'dragon') play.acts.push(dragonAct(ch, pk.val, dir));
   else if (k === 'tornado') play.acts.push(tornadoAct(ch, pk.val, dir));
   else if (k === 'swap') swapPlaces(ch);
   else if (k === 'teleport') {
@@ -3193,7 +3300,7 @@ function toLogical(e) {
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
   Sound.unlock();
-  if (pointer.id !== null) return;
+  if (pointer.id !== null && !e.isPrimary) return;   // takılı kalmış eski dokunuş yeni dokunuşu engellemesin
   pointer.id = e.pointerId;
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
   const p = toLogical(e); pointer.p = p;
@@ -3236,7 +3343,8 @@ canvas.addEventListener('pointercancel', pointerEnd);
 ['gesturestart', 'gesturechange', 'dblclick', 'contextmenu'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 ['touchend', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, () => Sound.unlock(), { passive: true }));
-document.addEventListener('visibilitychange', () => { if (document.hidden && play && play.phase !== 'over') play.paused = true; });
+document.addEventListener('visibilitychange', () => { pointer.id = null; pointer.btn = null; if (document.hidden && play && play.phase !== 'over') play.paused = true; });
+addEventListener('pageshow', () => { pointer.id = null; pointer.btn = null; });
 const portrait = window.matchMedia('(orientation: portrait)');
 const onOrient = () => { if (portrait.matches && play && play.phase !== 'over') play.paused = true; resize(); };
 if (portrait.addEventListener) portrait.addEventListener('change', onOrient); else if (portrait.addListener) portrait.addListener(onOrient);
