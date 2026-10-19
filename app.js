@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 23;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v23)
+const VERSION = 24;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v24)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },

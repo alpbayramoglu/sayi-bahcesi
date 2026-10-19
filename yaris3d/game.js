@@ -842,7 +842,7 @@ function update(dt) {
   camera.position.lerp(back, 1 - Math.exp(-dt * (state === 'menu' ? 2 : 14)));
   if (shake > 0) { shake = Math.max(0, shake - dt * 1.5); camera.position.x += mr(-.35, .35) * shake; camera.position.y += mr(-.25, .25) * shake; }
   camera.lookAt(tmpV.copy(target).addScaledVector(f.t, state === 'menu' ? 0 : 8).add(V3(0, state === 'menu' ? .6 : 1.2, 0)));
-  const fovT = me.turbo > 0 ? 80 : 64 + clamp(me.spd - 30, 0, 10) * .3; fov = lerp(fov, fovT, 1 - Math.exp(-dt * 4)); camera.fov = fov; camera.updateProjectionMatrix();
+  const fovT = me.turbo > 0 ? 80 : 64 + clamp(me.spd - 30, 0, 10) * .3; fov = lerp(fov, fovT, 1 - Math.exp(-dt * 4)); camera.fov = fov * fovK; camera.updateProjectionMatrix();
   sky.position.copy(camera.position);
   sun.position.copy(target).addScaledVector(SUN_DIR, 150); sun.target.position.copy(target);
   if (hitT > 0) { hitT -= dt; if (hitT <= 0) $('hit').classList.remove('on'); }
@@ -985,7 +985,10 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { if 
 addEventListener('pageshow', e => { if (e.persisted && state === 'menu') renderMenu(); });
 
 /* ================= döngü, kalite ayarı ================= */
-function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+// Geniş ekranda dikey açı sabit kalırsa yana çok açılır, araba ve yol basık görünür:
+// yatay görüş en fazla ~90° olsun diye dikey açıyı ekran oranına göre daralt
+let fovK = 1;
+function resize() { const w = innerWidth, h = innerHeight, a = w / h; renderer.setSize(w, h, false); camera.aspect = a; fovK = Math.min(1, 2 * Math.atan(1 / a) * 180 / Math.PI / 64); camera.updateProjectionMatrix(); }
 addEventListener('resize', resize); resize();
 let last = performance.now(), slowT = 0, fastT = 0, qStep = 0;
 function tuneQuality(dt) { // telefon yavaşsa önce çözünürlüğü, sonra gölgeyi düşür

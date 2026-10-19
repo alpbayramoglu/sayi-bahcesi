@@ -137,6 +137,12 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .tg small { font-size: 14px; color: var(--muted); }
 .tg i { width: 34px; height: 8px; border-radius: 4px; background: var(--c); }
 #loading { position: fixed; inset: 0; display: grid; place-items: center; background: #0E1220; font-size: 22px; font-style: italic; font-weight: 900; color: var(--muted); }
+#rotate { display: none; position: fixed; inset: 0; z-index: 50; background: #0E1220; color: #fff;
+  flex-direction: column; align-items: center; justify-content: center; gap: 28px; font-size: 26px; font-style: italic; font-weight: 900; text-align: center; }
+#rotate .phone { width: 56px; height: 96px; box-sizing: border-box; border: 7px solid #fff; border-radius: 14px; animation: turn 2.2s ease-in-out infinite; }
+@keyframes turn { 0%, 25% { transform: rotate(0deg); } 60%, 100% { transform: rotate(-90deg); } }
+@media (orientation: portrait) { #rotate { display: flex; } }
+@media (prefers-reduced-motion: reduce) { #rotate .phone { animation: none; transform: rotate(-90deg); } }
 @media (orientation: portrait) {
   .screen { flex-direction: column; justify-content: flex-start; }
   #items { flex-direction: column-reverse; align-items: center; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 104px); gap: 24px; }
@@ -224,6 +230,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   </div>
 </div>
 
+<div id="rotate"><div class="phone"></div><div>Telefonu yan çevir</div></div>
 <div id="loading">Pist hazırlanıyor…</div>
 <script src="three.min.js"></script>
 <script src="game.js"></script>
