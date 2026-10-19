@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#3E9E57">
+<title>Blok Rallisi · kuş bakışı (deneme)</title>
+<style>
+  @font-face { font-family: 'Baloo 2'; font-weight: 800; src: url(../fonts/baloo2-800.woff) format('woff'); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #2C7A44; touch-action: none;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+/* Blok Rallisi, kuş bakışı deneme sürümü.
+   Dikey ekran, 3 şerit yan yana; araba aşağıda, yol yukarıdan akar. Sola/sağa dokun ya da kaydır: şerit değiştir.
+   Her yarışta 4 sayı kapısı; soru kapıdan çok önce üstte çıkar, kapı bölgesinde herkes yavaşlar.
+   Bilet harcamaz, altın vermez: yalnızca görünüş ve hız denemesi. */
+const W = 400, H = 720, FONT = "'Baloo 2', 'Arial Rounded MT Bold', system-ui, sans-serif";
+const ROAD_L = 70, ROAD_W = 260, LANE_W = ROAD_W / 3, laneX = l => ROAD_L + LANE_W * (l + .5);
+const CAR_Y = 590, LEN = 9000, SPD = 230, TURBO = 150, GATE_SPD = 150, ZONE = 1300, ASK = 1900;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t;
+const hash = (i, s = 0) => { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); };
+
+const save = (() => { try { return JSON.parse(localStorage.getItem('sayi-bahcesi.v1')) || {}; } catch (e) { return {}; } })();
+const LV = clamp(save.level | 0 || 1, 1, 3);
+const PAINT = (save.race && save.race.car && save.race.car.P1 && save.race.car.P1.paint) || '#FFC21F';
+
+function question(k, seed) {
+  let n = 0; const R = (a, b) => a + Math.floor(hash(k * 7 + n++, seed + 3) * (b - a + 1));
+  let a, b, ans, q;
+  if (hash(k, seed + 11) >= .4) {
+    if (LV === 1) { a = R(1, 4); b = R(1, 5 - a); } else if (LV === 2) { a = R(1, 9); b = R(1, 10 - a); }
+    else { a = R(2, 9); b = R(2, 9); if (a + b <= 10) a = Math.min(9, a + 4); }
+    ans = a + b; q = `${a} + ${b}`;
+  } else {
+    if (LV === 1) { a = R(2, 5); b = R(1, a); } else if (LV === 2) { a = R(3, 10); b = R(1, a); }
+    else { a = R(11, 18); b = R(a - 9, 9); }
+    ans = a - b; q = `${a} − ${b}`;
+  }
+  const set = new Set([ans]); let d = 1;
+  while (set.size < 3) { for (const v of [ans + d, ans - d]) if (v >= 0 && set.size < 3) set.add(v); d++; }
+  const nums = [...set].sort(() => hash(k, seed + n++) - .5);
+  return { q, ans, nums, correct: nums.indexOf(ans) };
+}
+
+/* ----- yarış durumu ----- */
+let G;
+function newRace() {
+  const seed = 1 + Math.floor(Math.random() * 50);
+  const gates = [0, 1, 2, 3].map(i => Object.assign({ y: 1500 + i * 1900, solved: null }, question(i + 1, seed)));
+  const objs = [];
+  for (let y = 900; y < LEN - 400; y += 420) {
+    if (gates.some(g => Math.abs(g.y - y) < 700)) continue; // kapıya yakın başka şey yok: aynı anda tek iş
+    objs.push({ y, lane: Math.floor(hash(y, seed) * 3), type: hash(y, seed + 1) < .6 ? 'box' : 'boost', hit: false });
+  }
+  const mk = (o) => Object.assign({ y: 0, lane: 1, lx: laneX(1), spd: 0, turbo: 0, bump: 0, fin: null }, o);
+  const me = mk({ me: true, paint: PAINT, kind: 'penguin', name: 'Sen' });
+  const cpus = [
+    mk({ lane: 0, lx: laneX(0), y: 120, paint: '#34C17B', kind: 'cat', name: 'Yeşil', base: SPD - 8 }),
+    mk({ lane: 2, lx: laneX(2), y: 60, paint: '#9B6BEF', kind: 'penguin', name: 'Mor', base: SPD - 14 }),
+    mk({ lane: 1, lx: laneX(1), y: 200, paint: '#3FA9F5', kind: 'cat', name: 'Mavi', base: SPD - 20 }),
+  ];
+  G = { t: -3, seed, me, cars: [me, ...cpus], cpus, gates, objs, fx: [], msg: null, done: false, cam: 0 };
+}
+
+function nextGate(y) { return G.gates.find(g => g.y > y && g.solved === null); }
+function steer(d) { if (G.t < 0 || G.done) return; G.me.lane = clamp(G.me.lane + d, 0, 2); beep(520 + d * 80, .05); }
+function flash(text, col, t = 1.6) { G.msg = { text, col, t }; }
+
+function step(dt) {
+  G.t += dt;
+  for (const f of G.fx) f.t -= dt; G.fx = G.fx.filter(f => f.t > 0);
+  if (G.msg && (G.msg.t -= dt) <= 0) G.msg = null;
+  if (G.t < 0) return;
+  for (const c of G.cars) {
+    if (c.fin !== null) { c.spd = lerp(c.spd, 120, dt * 2); c.y += c.spd * dt; continue; }
+    let tgt = (c.me ? SPD : c.base) + (c.turbo > 0 ? TURBO : 0);
+    const g = nextGate(c.y); if (g && g.y - c.y < ZONE) tgt = Math.min(tgt, GATE_SPD);
+    if (c.bump > 0) { tgt *= .55; c.bump -= dt; }
+    c.turbo -= dt;
+    // aynı şeritte öndekine çarpma: arkasında kalır
+    for (const o of G.cars) if (o !== c && o.lane === c.lane && o.y > c.y && o.y - c.y < 62 && o.fin === null) { tgt = Math.min(tgt, o.spd * .9); if (c.me && c.bump <= 0 && o.y - c.y < 50) { c.bump = .6; beep(160, .12); } }
+    c.spd = lerp(c.spd, tgt, 1 - Math.exp(-dt * (tgt > c.spd ? 1.6 : 5)));
+    c.y += c.spd * dt;
+    c.lx = lerp(c.lx, laneX(c.lane), 1 - Math.exp(-dt * 12));
+    if (!c.me) cpuThink(c, dt);
+    // sayı kapısı
+    for (const g of G.gates) if (!g['p' + G.cars.indexOf(c)] && c.y >= g.y) {
+      g['p' + G.cars.indexOf(c)] = true;
+      const ok = c.lane === g.correct;
+      if (ok) c.turbo = 2.2;
+      if (c.me) { g.solved = ok; if (ok) { flash('Doğru! TURBO 🚀', '#2BB673'); beep(880, .1); beep(1320, .14, .1); } else { flash(`Cevap ${g.ans}`, '#E5483B'); beep(220, .2); } }
+    }
+    for (const o of G.objs) if (!o.hit && o.lane === c.lane && Math.abs(o.y - c.y) < 24) {
+      if (c.me) { o.hit = true; beep(990, .08); if (o.type === 'boost') { c.turbo = 1.2; flash('Hız!', '#F5A524', .8); } else { c.turbo = 1.6; flash('🚀 Roket!', '#9B6BEF', .9); } }
+      else if (o.type === 'boost') c.turbo = Math.max(c.turbo, .8);
+    }
+    if (c.y >= LEN && c.fin === null) { c.fin = G.t; if (c.me) { G.rank = G.cars.filter(x => x.fin !== null).length; setTimeout(() => G.done = true, 1200); beep(660, .1); beep(990, .2, .12); } }
+  }
+  if (G.me.fin === null || !G.done) G.cam = G.me.y;
+}
+function cpuThink(c, dt) {
+  // bilgisayar oyuncuya yakın kalsın; kapıda bazen doğru şeride geçer
+  const d = c.y - G.me.y; c.base = clamp(c.base + (d > 250 ? -30 : d < -250 ? 30 : 0) * dt, SPD - 45, SPD + 20);
+  const g = nextGate(c.y);
+  if (g && g.y - c.y < 700 && !c['aim' + g.y]) { c['aim' + g.y] = true; c.lane = hash(g.y + c.base | 0, 4) < .6 ? g.correct : Math.floor(hash(g.y, c.lx) * 3); }
+  else if (!g || g.y - c.y > 900) { if (Math.random() < dt * .25) c.lane = clamp(c.lane + (Math.random() < .5 ? -1 : 1), 0, 2); }
+}
+
+/* ----- çizim ----- */
+const sy = y => CAR_Y - (y - G.cam);
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function draw() {
+  const c = ctx;
+  c.fillStyle = '#58C46D'; c.fillRect(0, 0, W, H);
+  // kenar süsleri: çimen çizgileri, ağaçlar
+  const off = G.cam % 120;
+  for (let i = -1; i < 8; i++) { const y = i * 120 + off; c.fillStyle = '#4DB862'; c.fillRect(0, y, ROAD_L - 14, 60); c.fillRect(ROAD_L + ROAD_W + 14, y + 60, W, 60); }
+  for (let i = -1; i < 6; i++) {
+    const wy = Math.floor(G.cam / 170) * 170 - i * 170, y = sy(wy);
+    for (const side of [0, 1]) { if (hash(wy, side) < .35) continue; const x = side ? W - 26 - hash(wy, 3) * 12 : 26 + hash(wy, 2) * 12; c.fillStyle = 'rgba(0,0,0,.15)'; c.beginPath(); c.arc(x + 5, y + 6, 22, 0, 7); c.fill(); c.fillStyle = '#2E9A4A'; c.beginPath(); c.arc(x, y, 22, 0, 7); c.fill(); c.fillStyle = '#3FBF5E'; c.beginPath(); c.arc(x - 6, y - 6, 12, 0, 7); c.fill(); }
+  }
+  // yol, bordür
+  c.fillStyle = '#5B627A'; c.fillRect(ROAD_L, 0, ROAD_W, H);
+  for (const x of [ROAD_L - 12, ROAD_L + ROAD_W]) for (let i = -1; i < 20; i++) { c.fillStyle = i % 2 ? '#fff' : '#E5483B'; c.fillRect(x, i * 40 + (G.cam % 80), 12, 40); }
+  // kapı bölgesi: şeritler kendi rengine boyanır
+  const COL = ['#FF7AB6', '#FFC94D', '#7FD3FF'];
+  for (const g of G.gates) {
+    const y1 = sy(g.y), y0 = sy(g.y - ZONE); if (y1 > H || y0 < -50) continue;
+    for (let l = 0; l < 3; l++) {
+      c.globalAlpha = .38; c.fillStyle = g.solved !== null && l === g.correct ? '#4CFF9A' : COL[l];
+      c.fillRect(ROAD_L + l * LANE_W + 4, y1, LANE_W - 8, y0 - y1); c.globalAlpha = 1;
+      c.font = `800 44px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+      for (let k = 1; k * 300 < ZONE; k++) { const ty = sy(g.y - k * 300); if (ty < -30 || ty > H + 30) continue; c.lineWidth = 8; c.strokeStyle = 'rgba(30,34,51,.45)'; c.strokeText(g.nums[l], laneX(l), ty); c.fillStyle = '#fff'; c.fillText(g.nums[l], laneX(l), ty); }
+    }
+    // kapının kendisi: üç büyük kutu
+    for (let l = 0; l < 3; l++) {
+      const x = ROAD_L + l * LANE_W + 6, ok = g.solved !== null && l === g.correct;
+      c.fillStyle = '#1E2233'; rr(x, y1 - 34, LANE_W - 12, 60, 14); c.fill();
+      c.fillStyle = ok ? '#4CFF9A' : COL[l]; rr(x + 3, y1 - 31, LANE_W - 18, 52, 12); c.fill();
+      c.fillStyle = '#1E2233'; c.font = `800 38px ${FONT}`; c.fillText(g.nums[l], laneX(l), y1 - 3);
+    }
+  }
+  // şerit çizgileri
+  c.fillStyle = 'rgba(255,255,255,.75)';
+  for (const l of [1, 2]) for (let i = -1; i < 14; i++) c.fillRect(ROAD_L + l * LANE_W - 3, i * 60 + (G.cam % 60), 6, 32);
+  // başlangıç ve bitiş
+  for (const [y, lbl] of [[0, 'BAŞLA'], [LEN, 'BİTİŞ']]) { const yy = sy(y); if (yy < -40 || yy > H + 40) continue; for (let i = 0; i < 13; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? '#1E2233' : '#fff'; c.fillRect(ROAD_L + i * 20, yy - 20 + j * 20, 20, 20); } }
+  // eşyalar
+  for (const o of G.objs) {
+    if (o.hit) continue; const y = sy(o.y); if (y < -40 || y > H + 40) continue; const x = laneX(o.lane);
+    if (o.type === 'box') { c.fillStyle = '#1E2233'; rr(x - 22, y - 22, 44, 44, 10); c.fill(); c.fillStyle = '#FFC21F'; rr(x - 19, y - 19, 38, 38, 8); c.fill(); c.fillStyle = '#1E2233'; c.font = `800 30px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', x, y + 2); }
+    else { c.fillStyle = '#F5A524'; for (const k of [0, 18]) { c.beginPath(); c.moveTo(x - 20, y + 8 - k + 10); c.lineTo(x, y - 12 - k + 10); c.lineTo(x + 20, y + 8 - k + 10); c.lineTo(x + 20, y + 18 - k + 10); c.lineTo(x, y - 2 - k + 10); c.lineTo(x - 20, y + 18 - k + 10); c.fill(); } }
+  }
+  // arabalar
+  for (const car of [...G.cars].sort((a, b) => b.y - a.y)) drawCar(car, car.lx, sy(car.y));
+  // üst bilgi: sıra, ilerleme, soru
+  const rank = G.me.fin !== null ? G.rank : 1 + G.cars.filter(x => x !== G.me && x.y > G.me.y).length;
+  c.fillStyle = 'rgba(30,34,51,.85)'; rr(10, 10, 76, 52, 14); c.fill();
+  c.fillStyle = '#FFC21F'; c.font = `800 34px ${FONT}`; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(rank + '.', 20, 38);
+  c.fillStyle = 'rgba(30,34,51,.85)'; rr(96, 22, 294, 26, 13); c.fill();
+  c.fillStyle = '#fff'; rr(104, 31, 278 * clamp(G.me.y / LEN, 0, 1), 8, 4); c.fill();
+  const g = nextGate(G.me.y);
+  if (g && g.y - G.me.y < ASK) {
+    c.globalAlpha = sy(g.y) < 190 ? .3 : 1; // kapı kartın altından geçerken görünsün
+    c.fillStyle = '#1E2233'; rr(60, 72, 280, 74, 20); c.fill(); c.fillStyle = '#E5483B'; rr(64, 76, 272, 66, 17); c.fill();
+    c.fillStyle = '#fff'; c.font = `800 42px ${FONT}`; c.textAlign = 'center'; c.fillText(g.q + ' = ?', W / 2, 111); c.globalAlpha = 1;
+  }
+  if (G.t < 0) { c.fillStyle = '#fff'; c.strokeStyle = '#1E2233'; c.lineWidth = 10; c.font = `800 110px ${FONT}`; c.textAlign = 'center'; const s = String(Math.ceil(-G.t)); c.strokeText(s, W / 2, H / 2); c.fillText(s, W / 2, H / 2); c.font = `800 26px ${FONT}`; c.lineWidth = 6; c.strokeText('Sola ya da sağa dokun', W / 2, H / 2 + 90); c.fillText('Sola ya da sağa dokun', W / 2, H / 2 + 90); }
+  if (G.msg) { c.globalAlpha = clamp(G.msg.t * 2, 0, 1); c.font = `800 34px ${FONT}`; c.textAlign = 'center'; c.lineWidth = 8; c.strokeStyle = '#1E2233'; c.strokeText(G.msg.text, W / 2, 200); c.fillStyle = G.msg.col; c.fillText(G.msg.text, W / 2, 200); c.globalAlpha = 1; }
+  if (G.done) {
+    c.fillStyle = 'rgba(18,23,49,.6)'; c.fillRect(0, 0, W, H);
+    c.fillStyle = '#fff'; rr(50, 230, 300, 220, 26); c.fill();
+    c.fillStyle = '#1E2233'; c.font = `800 44px ${FONT}`; c.textAlign = 'center'; c.fillText(G.rank === 1 ? 'Birinci! 🏆' : G.rank + '. oldun', W / 2, 290);
+    c.font = `800 24px ${FONT}`; c.fillStyle = '#4B5A72'; c.fillText(`${G.gates.filter(x => x.solved).length} / 4 doğru kapı`, W / 2, 340);
+    c.fillStyle = '#34C17B'; rr(110, 372, 180, 56, 18); c.fill(); c.fillStyle = '#fff'; c.font = `800 28px ${FONT}`; c.fillText('Tekrar', W / 2, 401);
+  }
+}
+function drawCar(car, x, y) {
+  const c = ctx; c.save(); c.translate(x, y);
+  if (car.turbo > 0) { c.fillStyle = 'rgba(255,170,40,.8)'; c.beginPath(); c.moveTo(-10, 34); c.lineTo(0, 34 + 22 + Math.random() * 12); c.lineTo(10, 34); c.fill(); }
+  c.fillStyle = 'rgba(0,0,0,.22)'; rr(-22, -30, 48, 70, 14); c.fill();
+  c.fillStyle = '#1E2233'; for (const [wx, wy] of [[-26, -24], [16, -24], [-26, 12], [16, 12]]) { rr(wx, wy, 10, 18, 4); c.fill(); }
+  c.fillStyle = '#1E2233'; rr(-23, -36, 46, 72, 16); c.fill();
+  c.fillStyle = car.paint; rr(-20, -33, 40, 66, 13); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.35)'; rr(-15, -29, 10, 22, 5); c.fill();
+  c.fillStyle = '#BFE6FF'; rr(-14, -18, 28, 10, 4); c.fill();
+  // sürücü başı
+  const head = car.kind === 'cat' ? '#F4A261' : '#1E2233';
+  if (car.kind === 'cat') { c.fillStyle = head; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 11, 0); c.lineTo(s * 13, -14); c.lineTo(s * 3, -6); c.fill(); } }
+  c.fillStyle = head; c.beginPath(); c.arc(0, 4, 12, 0, 7); c.fill();
+  if (car.me) { c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.arc(0, 4, 15, 0, 7); c.stroke(); }
+  c.restore();
+}
+
+/* ----- ses ----- */
+let ac;
+function beep(f, d, delay = 0) { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + delay; o.frequency.value = f; o.type = 'triangle'; g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d); } catch (e) {} }
+
+/* ----- giriş ----- */
+let down = null;
+function toLogical(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
+cv.addEventListener('pointerdown', e => { down = { ...toLogical(e), id: e.pointerId }; try { ac && ac.resume(); } catch (er) {} });
+cv.addEventListener('pointerup', e => {
+  if (!down || e.pointerId !== down.id) return; const p = toLogical(e), dx = p.x - down.x; down = null;
+  if (G.done) { if (p.y > 360 && p.y < 440) newRace(); return; }
+  if (Math.abs(dx) > 30) steer(dx > 0 ? 1 : -1); else steer(p.x < W / 2 ? -1 : 1);
+});
+addEventListener('keydown', e => { if (e.key === 'ArrowLeft') steer(-1); if (e.key === 'ArrowRight') steer(1); if ((e.key === ' ' || e.key === 'Enter') && G.done) newRace(); });
+
+function fit() {
+  const s = Math.min(innerWidth / W, innerHeight / H), dpr = devicePixelRatio || 1;
+  cv.style.width = W * s + 'px'; cv.style.height = H * s + 'px';
+  cv.width = Math.round(W * s * dpr); cv.height = Math.round(H * s * dpr);
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+}
+addEventListener('resize', fit);
+let last = performance.now();
+function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; if (!G.done) step(dt); draw(); requestAnimationFrame(frame); }
+newRace(); fit(); requestAnimationFrame(frame);
+window.__kus = { get G() { return G; }, step, draw, steer, newRace };
+</script>
+</body>
+</html>
