@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 20;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v20)
+const VERSION = 21;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v21)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -552,6 +552,8 @@ function renderHome() {
   $('lootCoins').textContent = `🪙 ${maxCoins} altına kadar`;
   $('warSub').textContent = Store.d.tickets > 0 ? `🎟️ ${Store.d.tickets} bilet` : '🎟️ yok';
   $('warBtn').classList.toggle('no-ticket', !(Store.d.tickets > 0));
+  $('raceSub').textContent = $('warSub').textContent;
+  $('raceBtn').classList.toggle('no-ticket', !(Store.d.tickets > 0));
   $('gardenSub').textContent = `★ ${Store.d.stars}`;
   $('gardenDot').hidden = !(friendsFor(Store.d.stars) > Store.d.seen || worldState(Store.d.stars).open > (Store.d.worldSeen || 1));
   $('shopSub').textContent = `🪙 ${Store.d.coins}`;
@@ -595,8 +597,8 @@ function openSettings() {
     c.append(snd, par, ok);
   });
 }
-function goWar() {
-  if (Store.d.tickets > 0) { location.href = 'savas/'; return; }
+function goWar(path = 'savas/') {
+  if (Store.d.tickets > 0) { location.href = path; return; }
   modal((c, close) => {
     c.append(el('div', 'modal-ico', '🎟️'), el('h2', '', 'Biletin bitti'), el('p', '', 'Bir matematik turu bitir, bilet kazan!'));
     const ok = el('button', 'big-btn', 'Tamam'); ok.onclick = close; c.append(ok);
@@ -1301,6 +1303,9 @@ function confetti(n = 18) {
 for (const b of document.querySelectorAll('.level')) b.onclick = () => { Sound.play('tap'); Store.d.level = +b.dataset.level; Store.save(); renderCat(); };
 $('playBtn').onclick = () => { Sound.play('tap'); startRound(nextMode()); };
 $('warBtn').onclick = () => { Sound.play('tap'); goWar(); };
+$('raceBtn').onclick = () => { Sound.play('tap'); goWar('yaris/'); };
+// Oyundan geri tuşuyla dönülürse sayfa bellekten gelir; oyunda kazanılan altın ve harcanan bilet kaybolmasın
+addEventListener('pageshow', e => { if (e.persisted) { Store.load(); renderHome(); } });
 $('gardenBtn').onclick = () => { Sound.play('tap'); show('garden'); renderGarden(); };
 $('shopBtn').onclick = () => { Sound.play('tap'); show('shop'); renderShop(); };
 $('tasksBtn').onclick = () => { Sound.play('tap'); show('tasks'); renderTasks(); };

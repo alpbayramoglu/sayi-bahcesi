@@ -417,11 +417,16 @@ h1 { color: var(--ink); text-shadow: none; }
 .hero-loot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; color: #D9F7E6; }
 .hero-loot .chip { background: rgba(255, 255, 255, .18); color: #fff; padding: 3px 12px; border-radius: 999px; font-size: 16px; box-shadow: none; margin: 0; }
 .home-side { display: flex; flex-direction: column; gap: 16px; }
-.rewards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.rewards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .reward { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 6px 10px; border-radius: 22px; background: #fff; box-shadow: 0 6px 0 var(--c); transition: transform .08s; min-width: 0; }
 #warBtn { background: #fff; }
 .reward:active, .cat:active { transform: translateY(3px) scale(.98); }
 .r-ico { width: 50px; height: 50px; border-radius: 16px; background: var(--bg); display: grid; place-items: center; font-size: 28px; }
+/* 4 kart: dikeyde 2×2, ikon solda */
+.reward { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; align-items: center; justify-items: start; padding: 10px 12px; }
+.reward .r-ico { grid-row: 1 / span 2; width: 44px; height: 44px; font-size: 24px; border-radius: 14px; }
+.reward .r-lbl { align-self: end; text-align: left; }
+.reward .r-sub { align-self: start; }
 .r-lbl { font-size: 18px; line-height: 1.1; }
 .r-sub { font-size: 15px; line-height: 1.15; color: #4B5A72; white-space: nowrap; }
 .reward.no-ticket .r-sub { color: #9AA6B8; }

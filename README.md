@@ -15,11 +15,24 @@ Yazı tipi: Baloo 2 (SIL OFL 1.1, `fonts/OFL-baloo2.txt`).
 ## Oyun, dükkân ve görevler
 
 - **Kartopu Savaşı** (`savas/`): War of Blocks bu uygulamanın içinde. Her maç bir 🎟️ bilet harcar.
+- **Blok Rallisi** (`yaris/`): Araba yarışı. Her yarış bir 🎟️ bilet harcar (Sırayla modunda iki tur tek bilet).
 - **Bilet:** Her matematik turu 1 bilet verir, en fazla 3 birikir. Ebeveyn görevleri bu sınıra takılmadan bilet verebilir.
 - **Altın 🪙:** Matematik turunda yıldız başına 2; Zor seviyede +2, yeni rekorda +1. Kartopu Savaşı'nı kazanınca 3 + yıldız, kaybedince 1, 2 oyunculu maçta 2. Dükkânda su balonu (1), boya küpü (2), balık (3) gibi eşyalar alınır. Alınan eşyalar savaşta penguenin çantasına gelir; önce bölümün bedava verdikleri, sonra çantadakiler harcanır.
 - **Yıldız ★:** Hiç harcanmaz, Bahçem'i büyütür.
 - **Ebeveyn paneli (⚙️):** 4 haneli PIN ile açılır (unutulursa yetişkin sorusuyla sıfırlanır). Görev türleri: bir kez, N gün üst üste, haftada N kez. Çocuk "Yaptım!" der, ebeveyn onaylar; hedef dolunca ödül verilir ve çocuk ana sayfaya dönünce kutlama görür. Panelde yedek kodu alma / geri yükleme var; Safari verileri silinirse ilerleme buradan geri gelir.
 - Her şey cihazın kendi kaydında (localStorage) durur; sunucu yok. PIN bir çocuk kilidi, şifreleme değil.
+
+## Blok Rallisi
+
+- **Oynanış:** Yandan görünüm, 3 şerit; araba kendi gider. Yukarı / aşağı ile şerit değişir, büyük düğme eşyayı kullanır. Aynı şeritte öndekine çarpan arkasında kalır.
+- **Modlar:** Tek kişi (3 bilgisayar rakip), İki kişi (aynı anda, aynı ekran: sol kenar Penguen, sağ kenar Kedi; 2 bilgisayar rakip), Sırayla (önce biri sürer, sonra öteki onun saydam "hayalet" arabasına karşı sürer, kısa süre kazanır).
+- **İki kişide kamera:** İki arabanın ortasını izler, aralarındaki mesafe açıldıkça uzaklaşır. Geride kalan ekrandan düşecek olursa öndekinin yanına ışınlanır ("YETİŞ!") ve kısa bir süre yavaş gider.
+- **Sayı kapısı:** Her yarışta birkaç kez yolun üstünde soru çıkar (toplama ya da çıkarma, zorluk Sayı Bahçesi'ndeki seviyeyi izler: Kolay 0–5, Orta 0–10, Zor 0–20). Doğru sayının şeridinden geçen turbo alır; yanlış şeritte ceza yok, doğru cevap ekranda gösterilir.
+- **Eşyalar (? kutusundan):** ⚪ Kartopu (en yakın öndekine gider, kaydırıp yavaşlatır), 💧 Su balonu (arkaya birikinti bırakır), 🚀 Roket (2 saniye turbo), ☂️ Şemsiye (bir eşyayı ya da birikintiyi savuşturur). Geride kalan daha çok roket bulur. Pistte ayrıca rampa, hız oku ve su birikintisi var.
+- **Pistler:** Çiçek Vadisi, Buz Tepesi, Kale Yolu (gün batımı, havai fişek), Korsan Koyu (tahta iskele, uzakta top atan gemi).
+- **Altın:** Tek kişide sıraya göre 5 / 4 / 3 / 2; İki kişi ve Sırayla'da 5.
+- **Garaj:** Penguenin ve kedinin arabası için boya (5–10 altın) ve tekerlek (Alev 7 altın). Yalnızca görünüş, hızı değiştirmez. Seçimler kayıtta `race` altında durur.
+- **Klavye:** Tek kişi ve Sırayla'da ↑ ↓ ve boşluk. İki kişide 1P W S D, 2P ↑ ↓ ←.
 
 ## Kartopu Savaşı
 

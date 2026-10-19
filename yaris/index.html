@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sayı Bahçesi">
+<meta name="theme-color" content="#4FB8F5">
+<meta name="format-detection" content="telephone=no">
+<title>Blok Rallisi</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<link rel="icon" type="image/png" href="../icons/icon-192.png">
+<link rel="preload" href="../fonts/baloo2-800.woff" as="font" type="font/woff" crossorigin>
+<style>
+  /* Baloo 2 ExtraBold (SIL OFL 1.1, fonts/OFL-baloo2.txt) — Türkçe harfler dahil, çevrimdışı çalışsın diye repo içinde */
+  @font-face {
+    font-family: 'Baloo 2'; font-style: normal; font-weight: 800; font-display: swap;
+    src: url(../fonts/baloo2-800.woff) format('woff');
+  }
+  :root { --ink: #1E2233; --muted: #4B5A72; --sun: #FFC21F; --red: #E5483B; --sky: #3FA9F5; --mint: #34C17B; --grape: #9B6BEF; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; background: #121731; color: var(--ink);
+    font: 800 16px/1.2 'Baloo 2', 'Arial Rounded MT Bold', system-ui, sans-serif;
+    overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent; touch-action: none;
+  }
+  button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+  button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  #wrap {
+    position: fixed; inset: 0;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    display: flex; align-items: center; justify-content: center;
+  }
+  canvas#game { display: block; touch-action: none; border-radius: 14px; }
+  .panel {
+    position: fixed; inset: 0; z-index: 2; display: flex; flex-direction: column; gap: 10px;
+    padding: max(10px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+    background: linear-gradient(180deg, rgba(18,23,49,.25), rgba(18,23,49,.55));
+  }
+  #play { background: none; pointer-events: none; }
+  #play .quit { pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%); bottom: max(6px, env(safe-area-inset-bottom, 0px)); padding: 5px 14px; border-radius: 999px; background: rgba(18,23,49,.7); color: #fff; font-size: 13px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.25); }
+  .top { display: flex; align-items: center; gap: 10px; }
+  .top h1 { margin: 0; font-size: 28px; line-height: 1; color: #fff; text-shadow: 0 3px 0 var(--ink); flex: 1; }
+  .round { width: 44px; height: 44px; border-radius: 14px; background: #fff; box-shadow: 0 4px 0 #9FB3C8; font-size: 26px; line-height: 1; display: grid; place-items: center; flex: none; }
+  .round:active, .card-btn:active, .btn:active { transform: translateY(3px); }
+  .chip { padding: 6px 12px; border-radius: 999px; background: #fff; font-size: 17px; box-shadow: 0 3px 0 #9FB3C8; white-space: nowrap; }
+  .modes { margin-top: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .card-btn { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; align-items: center; padding: 12px 14px; border-radius: 22px; background: #fff; box-shadow: 0 6px 0 var(--c); text-align: left; min-width: 0; position: relative; overflow: hidden; }
+  .card-btn .ico { grid-row: 1 / span 2; width: 56px; height: 56px; border-radius: 18px; background: var(--bg); display: grid; place-items: center; font-size: 28px; line-height: 1; letter-spacing: -4px; }
+  .card-btn b { font-size: 24px; line-height: 1; align-self: end; }
+  .card-btn small { font-size: 14px; color: var(--muted); line-height: 1.15; align-self: start; }
+  .card-btn .cost { position: absolute; top: 8px; right: 10px; font-size: 14px; padding: 2px 9px; border-radius: 999px; background: var(--bg); }
+  .card-btn.dim { opacity: .55; }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .row .k { color: #fff; font-size: 15px; text-shadow: 0 2px 0 var(--ink); }
+  .pill { padding: 7px 12px; border-radius: 12px; background: rgba(255,255,255,.75); font-size: 15px; box-shadow: 0 3px 0 rgba(30,34,51,.35); }
+  .pill[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: 0 3px 0 #000; }
+  .bottom { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: space-between; }
+  .garage-btn { padding: 9px 16px; border-radius: 14px; background: var(--sun); box-shadow: 0 4px 0 #B98600; font-size: 18px; }
+  .note { margin: 0; color: #fff; text-shadow: 0 2px 0 var(--ink); font-size: 15px; text-align: center; }
+  /* garaj */
+  #garage { background: #121731; }
+  .gbody { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+  #garageCv { width: 100%; height: auto; aspect-ratio: 640 / 400; max-height: 100%; border-radius: 18px; box-shadow: 0 0 0 3px var(--ink); align-self: center; }
+  .gopts { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fff; border-radius: 20px; padding: 12px; box-shadow: 0 6px 0 #9FB3C8; }
+  .gopts h4 { margin: 0 0 4px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .sw { width: 34px; height: 34px; border-radius: 11px; background: var(--c); box-shadow: inset 0 -5px 0 rgba(0,0,0,.22), 0 0 0 2px var(--ink); position: relative; }
+  .sw[aria-pressed="true"] { box-shadow: inset 0 -5px 0 rgba(0,0,0,.22), 0 0 0 2px var(--ink), 0 0 0 5px var(--sun); }
+  .sw .price { position: absolute; right: -6px; top: -8px; font-size: 11px; background: #fff; border-radius: 999px; padding: 0 5px; box-shadow: 0 0 0 1.5px var(--ink); }
+  .opt { padding: 8px 12px; border-radius: 12px; background: #EEF2F8; font-size: 16px; box-shadow: inset 0 0 0 2px #D5DEE8; }
+  .opt[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: none; }
+  .opt .price { font-size: 13px; color: #9A5A00; }
+  .opt[aria-pressed="true"] .price { color: var(--sun); }
+  .btn { padding: 10px 16px; border-radius: 14px; background: var(--sun); box-shadow: 0 4px 0 #B98600; font-size: 18px; }
+  .btn.alt { background: #E3E9F0; box-shadow: 0 4px 0 #9FB3C8; }
+  .btn:disabled { opacity: .55; }
+  .btn small { font-size: 13px; }
+  /* sonuç ve onay kartı */
+  #ov { position: fixed; inset: 0; z-index: 4; display: flex; align-items: center; justify-content: center; background: rgba(7,9,20,.5); padding: 14px; }
+  .card { background: #fff; border-radius: 24px; padding: 16px 20px; width: min(100%, 420px); max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 8px 0 #9FB3C8; }
+  .card h3 { margin: 0; font-size: 28px; line-height: 1.05; }
+  .card p { margin: 0; color: var(--muted); }
+  .card .gain { color: #9A5A00; font-size: 19px; }
+  .res { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; font-size: 17px; }
+  .res li { display: flex; align-items: center; gap: 8px; }
+  .res small { color: var(--muted); font-size: 13px; }
+  .res em { margin-left: auto; font-style: normal; color: #1F78C1; font-variant-numeric: tabular-nums; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 2px var(--ink); flex: none; }
+  .btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  /* bilet yok */
+  #noticket { align-items: center; justify-content: center; }
+  #noticket .card { text-align: center; align-items: center; }
+  @media (max-height: 340px) { .card-btn small { display: none; } .top h1 { font-size: 24px; } }
+  #rotate {
+    display: none; position: fixed; inset: 0; z-index: 9;
+    background: linear-gradient(#4FB8F5, #D2F0FF); color: var(--ink);
+    flex-direction: column; align-items: center; justify-content: center; gap: 28px; font-size: 28px; text-align: center;
+  }
+  #rotate .phone { width: 56px; height: 96px; border: 7px solid var(--ink); border-radius: 14px; background: #fff; box-shadow: 0 5px 0 var(--ink); animation: turn 2.2s ease-in-out infinite; }
+  @keyframes turn { 0%, 25% { transform: rotate(0deg); } 60%, 100% { transform: rotate(-90deg); } }
+  @media (orientation: portrait) { #rotate { display: flex; } }
+  @media (prefers-reduced-motion: reduce) { #rotate .phone { animation: none; transform: rotate(-90deg); } }
+</style>
+</head>
+<body>
+  <div id="wrap"><canvas id="game" aria-label="Blok Rallisi yarışı"></canvas></div>
+
+  <section class="panel" id="menu">
+    <div class="top">
+      <button class="round" id="back" type="button" aria-label="Sayı Bahçesi ana sayfa">‹</button>
+      <h1>Blok Rallisi</h1>
+      <span class="chip tickets"></span><span class="chip coins"></span>
+    </div>
+    <div class="modes">
+      <button class="card-btn" type="button" data-mode="single" style="--c:#FFC21F;--bg:#FEF1DA"><span class="cost">🎟️ 1</span><span class="ico">🏎️</span><b>Tek kişi</b><small>3 bilgisayar arabaya karşı</small></button>
+      <button class="card-btn" type="button" data-mode="duo" style="--c:#E5483B;--bg:#FDE7E5"><span class="cost">🎟️ 1</span><span class="ico" style="font-size:20px;letter-spacing:-2px;white-space:nowrap">🐧🐱</span><b>İki kişi</b><small>Aynı anda, aynı ekranda</small></button>
+      <button class="card-btn" type="button" data-mode="solo" style="--c:#3FA9F5;--bg:#E3F2FD"><span class="cost">🎟️ 1</span><span class="ico">⏱️</span><b>Sırayla</b><small>Önce biri, sonra öteki</small></button>
+    </div>
+    <p class="note" id="noTicketNote" hidden>Biletin yok. Bir matematik turu bitir, bilet kazan!</p>
+    <div class="bottom">
+      <div class="row" role="group" aria-label="Pist">
+        <span class="k">Pist</span>
+        <button class="pill" type="button" data-theme-pick="meadow">Çiçek Vadisi</button>
+        <button class="pill" type="button" data-theme-pick="snow">Buz Tepesi</button>
+        <button class="pill" type="button" data-theme-pick="castle">Kale Yolu</button>
+        <button class="pill" type="button" data-theme-pick="pirate">Korsan Koyu</button>
+      </div>
+      <div class="row" role="group" aria-label="Tek kişide sürücü">
+        <span class="k">Sürücü</span>
+        <button class="pill" type="button" data-who="P1">Penguen</button>
+        <button class="pill" type="button" data-who="P2">Kedi</button>
+        <button class="garage-btn" type="button" id="garageBtn">🔧 Garaj</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="garage" hidden>
+    <div class="top">
+      <button class="round toMenu" type="button" aria-label="Menüye dön">‹</button>
+      <h1>Garaj</h1>
+      <span class="chip coins"></span>
+    </div>
+    <div class="gbody">
+      <canvas id="garageCv" aria-label="Garajda dönen araba"></canvas>
+      <div class="gopts">
+        <div class="row" role="group" aria-label="Araba">
+          <button class="opt" type="button" data-gkey="P1">Penguenin arabası</button>
+          <button class="opt" type="button" data-gkey="P2">Kedinin arabası</button>
+        </div>
+        <div><h4>Boya</h4><div class="row" id="paints"></div></div>
+        <div><h4>Tekerlek</h4><div class="row" id="wheels"></div></div>
+        <button class="btn" type="button" id="buy" hidden></button>
+        <button class="btn alt" type="button" id="horn">📯 Korna çal</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="noticket" hidden>
+    <div class="card"><h3>🎟️ Biletin bitti</h3><p>Bir matematik turu bitir, bilet kazan!</p><div class="btns"><button class="btn toMenu" type="button">Tamam</button></div></div>
+  </section>
+
+  <section class="panel" id="play" hidden>
+    <button class="quit" type="button" id="quit">Çık</button>
+  </section>
+
+  <div id="ov" hidden></div>
+  <div id="rotate"><div class="phone"></div><div>Telefonu yan çevir</div></div>
+  <script src="game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      // Yeni sürüm devreye girince bir kez yenile ki bütün dosyalar aynı sürümden gelsin; yarış sürüyorsa bitmesini bekle.
+      const hadController = !!navigator.serviceWorker.controller;
+      let pending = false;
+      const reloadWhenIdle = () => {
+        if (!window.__race || window.__race.screen !== 'play') location.reload();
+        else setTimeout(reloadWhenIdle, 2000);
+      };
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hadController && !pending) { pending = true; reloadWhenIdle(); }
+      });
+      addEventListener('load', () => navigator.serviceWorker.register('../sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
