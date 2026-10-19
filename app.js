@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 22;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v22)
+const VERSION = 23;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v23)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -42,7 +42,7 @@ const STARS_PER_FRIEND = 3;
 // Her matematik turu bir maç bileti verir; bilet en fazla TICKET_MAX birikir ki matematik → oyun döngüsü korunsun.
 const TICKET_MAX = 3;
 // Savaş eşyaları (anahtarlar savas/game.js içindeki ITEMS ile aynı). num: sayı seçerek kullanılır.
-const SHOP_GROUPS = [['throw', 'Atılanlar'], ['num', 'Sayılı'], ['def', 'Destek']];
+const SHOP_GROUPS = [['throw', 'Atılanlar'], ['num', 'Sayılı'], ['def', 'Destek'], ['race', 'Yarış (Blok Rallisi 3D)']];
 const SHOP = [
   { key: 'balloon', dmg: "37", desc: "Patlayınca her yer su olur. Çarptığı yerde büyük bir çukur açar, rakibi ıslatır.", how: "Çantadan seç, parmağını geri çek, bırak.", tip: "Rüzgârdan çok etkilenir: rüzgâr okuna bak!", g: 'throw', ico: '💦', name: 'Su Balonu', info: 'Büyük patlar', price: 1 },
   { key: 'fish', dmg: "37", desc: "Çok hafif uçar, neredeyse dümdüz gider. Uzaktaki rakibe yetişir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu pek itemez.", g: 'throw', ico: '🐟', name: 'Balık', info: 'Dümdüz uçar', price: 3 },
@@ -72,6 +72,16 @@ const SHOP = [
   { key: 'storm', dmg: "25", desc: "Seçtiğin sayının üstünde kara bir bulut toplanır, gürler ve yıldırım düşer. Vurulanın kafası karışır.", how: "Çantadan seç, cetvelden sayıyı seç, TAMAM.", tip: "Rüzgâr buluta işlemez, tam seçtiğin yere düşer.", g: 'num', ico: '⛈️', name: 'Yıldırım Bulutu', info: 'Bulut, gürleme, yıldırım', price: 5 },
   { key: 'tornado', dmg: "20", desc: "Hortum rakibe doğru seçtiğin adım kadar gider. Suyun ve duvarın üstünden geçer, yakaladığını havaya savurur.", how: "Çantadan seç, kaç adım gideceğini seç, TAMAM.", tip: "Aradaki su yüzünden kurbağanın gidemediği yere hortum gider.", g: 'num', ico: '🌪️', name: 'Hortum', info: 'Su ve duvar durdurmaz', price: 4 },
   { key: 'swap', desc: "En yakın rakibinle ışıltılar içinde yer değiştirirsin.", how: "Çantadan seç, KULLAN.", tip: "Rakip güvenli bir yerdeyse onun yerine sen geç!", g: 'def', ico: '🔄', name: 'Yer Değiştirme', info: 'Rakiple yerini değiştir', price: 4 },
+  // Yarış eşyaları (anahtarlar yaris3d/game.js içindeki RITEMS ile aynı). Yarıştan önce çantaya en fazla 3 tane konur.
+  { key: 'r_missile', num: true, dmg: "rakip döner", desc: "Füze seçtiğin sıradaki arabaya gider ve onu döndürür. Önündeki her arabayı seçebilirsin.", how: "Yarışta çantadaki füzeye bas, kaçıncı sıradaki arabayı vuracağını seç.", tip: "Sen 5. isen 1., 2., 3. ya da 4. sıradakini seçebilirsin. Birinciyi vurmak için 1'e bas!", g: 'race', ico: '🚀', name: 'Hedef Füzesi', info: 'Kaçıncı sıradakini vursun?', price: 4 },
+  { key: 'r_oil', dmg: "değen döner", desc: "Arkana kaygan bir yağ birikintisi bırakırsın. Üstünden geçen araba fırıl fırıl döner.", how: "Yarışta çantadaki yağa bas.", tip: "Arkanda biri yaklaşırken bırak.", g: 'race', ico: '🛢️', name: 'Yağ Birikintisi', info: 'Arkana bırak', price: 2 },
+  { key: 'r_cones', dmg: "yavaşlatır", desc: "Arkana üç turuncu koni dizersin. Konilere çarpan araba yavaşlar.", how: "Yarışta çantadaki konilere bas.", tip: "Dar virajda bırakırsan kaçmak zor olur.", g: 'race', ico: '🚧', name: 'Koni Seti', info: 'Arkana koni diz', price: 2 },
+  { key: 'r_snow', dmg: "rakip kayar", desc: "Önüne dümdüz bir kartopu atarsın. Aynı şeritteki ilk arabaya çarpar, araba kayar.", how: "Yarışta çantadaki kartopuna bas.", tip: "Önce öndeki arabanın şeridine geç, sonra at.", g: 'race', ico: '⚪', name: 'Kartopu', info: 'Öndekine at', price: 3 },
+  { key: 'r_bolt', dmg: "öndekiler yavaşlar", desc: "Gökten yıldırım düşer: senden öndeki bütün arabalar bir süre yavaşlar.", how: "Yarışta çantadaki yıldırıma bas.", tip: "Gerideyken kullan, ne kadar çok araba öndeyse o kadar iyi.", g: 'race', ico: '⚡', name: 'Yıldırım', info: 'Öndekilerin hepsi yavaşlar', price: 7 },
+  { key: 'r_shield', dmg: "saldırıyı yutar", desc: "Arabanın çevresinde bir kalkan açılır. Gelen ilk füze, kartopu, yağ ya da koni sana işlemez.", how: "Yarışta çantadaki kalkana bas.", tip: "Arkandan füze sesi gelince kullan.", g: 'race', ico: '🛡️', name: 'Kalkan', info: 'İlk saldırıyı yutar', price: 3 },
+  { key: 'r_tires', dmg: "kaymazsın", desc: "Bir tur boyunca yağ ve çamur sana işlemez, hiç kaymazsın.", how: "Yarışta çantadaki lastiğe bas.", tip: "Önünde yağ ya da çamur görünce kullan.", g: 'race', ico: '🛞', name: 'Kaymaz Lastik', info: 'Yağ ve çamur işlemez', price: 3 },
+  { key: 'r_turbo', dmg: "3 saniye hız", desc: "Arabanın arkasından alev çıkar, 3 saniye çok hızlı gidersin.", how: "Yarışta çantadaki turboya bas.", tip: "Düz yolda ya da rampadan önce kullan.", g: 'race', ico: '🔥', name: 'Turbo', info: '3 saniye hızlan', price: 3 },
+  { key: 'r_start', dmg: "hızlı kalkış", desc: "Yeşil ışık yanınca roket gibi kalkarsın, rakipleri başta geçersin.", how: "Çantanda olması yeter, kendisi çalışır.", tip: "Yarışa en arkadan başlarsın, bununla hemen öne geçersin.", g: 'race', ico: '🚦', name: 'Süper Start', info: 'Yeşil ışıkta roket gibi', price: 2 },
 ];
 // Dünyalar: bahçe dolunca akvaryum, akvaryum dolunca orman açılır. Yeni dünyada arkadaş daha pahalı (3 → 5 → 8 yıldız),
 // böylece hep bir hedef kalır ama ödül hızı yavaşlar.
@@ -589,10 +599,11 @@ function renderGames() {
   $('tTitle').textContent = n > 0 ? `${n} biletin var` : 'Biletin yok';
   $('tSub').textContent = n >= TICKET_MAX ? 'Biletlerin dolu, hadi oyna! Her oyun 1 bilet.' : n > 0 ? 'Her oyun 1 bilet. Bir tur bitir, 1 bilet daha kazan.' : 'Bir matematik turu bitir, bilet kazan.';
   $('tGo').hidden = n > 0;
-  for (const id of ['warBtn', 'raceBtn']) $(id).classList.toggle('no-ticket', !(n > 0));
+  for (const id of ['warBtn', 'raceBtn', 'race3dBtn']) $(id).classList.toggle('no-ticket', !(n > 0));
   const w = warNext();
   $('warSub').textContent = (w ? `Bölüm ${w} seni bekliyor` : 'Bütün bölümler bitti!') + ' · 1 ya da 2 kişi';
   $('raceNew').hidden = !!Store.d.raceSeen;
+  $('race3dNew').hidden = !!Store.d.race3dSeen;
 }
 // Alıştırma sayfası: zorluk + o gruptaki alıştırmalar
 let catGroup = 'num';
@@ -645,7 +656,7 @@ function renderShop() {
       card.append(el('div', 'shop-ico', it.ico), el('div', 'shop-name', it.name), el('div', 'shop-info', it.info));
       if (it.dmg) card.append(el('div', 'shop-dmg', /^\d/.test(it.dmg) ? `💥 ${it.dmg}` : it.dmg));
       card.append(el('div', 'shop-have', `🎒 ${have}`));
-      if (grp === 'num') card.append(el('span', 'shop-badge', '🔢'));
+      if (grp === 'num' || it.num) card.append(el('span', 'shop-badge', '🔢'));
       const info = el('button', 'shop-info-btn', 'i'); info.setAttribute('aria-label', it.name + ' nedir?');
       info.onclick = () => { Sound.play('tap'); shopInfo(it); };
       card.append(info);
@@ -1333,6 +1344,7 @@ for (const b of document.querySelectorAll('.level')) b.onclick = () => { Sound.p
 $('playBtn').onclick = () => { Sound.play('tap'); startRound(nextMode()); };
 $('warBtn').onclick = () => { Sound.play('tap'); goWar(); };
 $('raceBtn').onclick = () => { Sound.play('tap'); if (Store.d.tickets > 0 && !Store.d.raceSeen) { Store.d.raceSeen = true; Store.save(); } goWar('yaris/'); };
+$('race3dBtn').onclick = () => { Sound.play('tap'); if (Store.d.tickets > 0 && !Store.d.race3dSeen) { Store.d.race3dSeen = true; Store.save(); } goWar('yaris3d/'); };
 $('tGo').onclick = () => { Sound.play('tap'); startRound(nextMode()); };
 // Oyundan geri tuşuyla dönülürse sayfa bellekten gelir; oyunda kazanılan altın ve harcanan bilet kaybolmasın
 addEventListener('pageshow', e => { if (e.persisted) { Store.load(); renderHome(); if (screen === 'games') renderGames(); } });
@@ -1381,9 +1393,13 @@ new MutationObserver(ms => {
 }).observe(document.body, { childList: true, subtree: true });
 goldify(document.body);
 
-show('home');
-renderHome();
-setTimeout(celebrateNext, 600);
+// Yarıştaki "Dükkândan yarış eşyası al" bağlantısı ../#shop ile gelir
+if (location.hash === '#shop') { history.replaceState(null, '', location.pathname + location.search); openTab.shop(); }
+else {
+  show('home');
+  renderHome();
+  setTimeout(celebrateNext, 600);
+}
 
 // Test ve hata ayıklama için küçük bir kapı (oyunu etkilemez)
 window.__mg = { get screen() { return screen; }, get cur() { return cur; }, get round() { return round; }, startRound, GEN, build, options, numSay, worldState, friendAt, renderGarden, Store, approveTask, taskCount, taskState, dayKey, addDays, backupCode, restoreBackup, hashPin };

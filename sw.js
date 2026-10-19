@@ -2,7 +2,7 @@
 // Bütün dosyalar tek sürüm olarak birlikte önbelleğe alınır ve hep önbellekten verilir;
 // böylece yeni index.html ile eski app.js gibi karışık bir sürüm oluşmaz.
 // Her yayında CACHE adını artır: yeni service worker bütün dosyaları birlikte yeniden indirir.
-const CACHE = 'sayi-bahcesi-v22';   // app.js içindeki VERSION ile aynı tut
+const CACHE = 'sayi-bahcesi-v23';   // app.js içindeki VERSION ile aynı tut
 importScripts('audio/clips.js');   // self.CLIPS: tools/make-audio.sh'in ürettiği ses parçaları
 const ASSETS = [
   ...self.CLIPS.map(n => `./audio/${n}.mp3`),
@@ -21,6 +21,13 @@ const ASSETS = [
   './yaris/',
   './yaris/index.html',
   './yaris/game.js',
+  './yaris3d/',
+  './yaris3d/index.html',
+  './yaris3d/game.js',
+  './yaris3d/three.min.js',
+  './yaris3d/card.jpg',
+  './fonts/exo2-italic-900.woff',
+  './fonts/exo2-800.woff',
 ];
 
 self.addEventListener('install', e => {

@@ -551,6 +551,7 @@ h1 { color: var(--ink); text-shadow: none; }
 .art-war .arc { left: 32%; top: 24%; width: 38%; height: 50%; border-top: 4px dashed #fff; border-radius: 50% 50% 0 0; }
 .art-war .ball { left: calc(70% - 10px); top: 34%; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px var(--ink); }
 .art-war .cat { right: 8%; bottom: 28px; width: 44px; height: 48px; border-radius: 21px 21px 13px 13px; background: #F39A3B; box-shadow: 0 0 0 3px var(--ink); }
+.art-r3d { background: #3A4A5A url(yaris3d/card.jpg) center / cover no-repeat; }
 .art-race { background: linear-gradient(#4FB6EE, #FFF0C2 75%); }
 .art-race .hill { left: -20px; right: -20px; bottom: 56px; height: 48px; border-radius: 50% 50% 0 0; background: #58C46D; }
 .art-race .road { left: 0; right: 0; bottom: 0; height: 60px; background: #555C76; }
@@ -581,7 +582,7 @@ body.tabbed #gardenHomeBtn, body.tabbed #shop .back { display: none; }
   .tab { padding: 8px 0; }
   .home-side { justify-content: center; }
   .games-body { width: min(100%, 1000px); }
-  .game-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1; min-height: 0; }
+  .game-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); flex: 1; min-height: 0; }
   .game-card .g-art { flex: 1; height: auto; min-height: 90px; }
   .ticket-card { padding: 8px 14px; }
   .t-slots i { width: 26px; height: 34px; border-radius: 7px; }

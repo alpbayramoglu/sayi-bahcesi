@@ -23,6 +23,7 @@ Altta dört sekme var (yatay ekranda solda): **Öğren**, **Oyunlar**, **Bahçem
 
 - **Kartopu Savaşı** (`savas/`): War of Blocks bu uygulamanın içinde. Her maç bir 🎟️ bilet harcar.
 - **Blok Rallisi** (`yaris/`): Araba yarışı. Her yarış bir 🎟️ bilet harcar (Sırayla modunda iki tur tek bilet).
+- **Blok Rallisi 3D** (`yaris3d/`): Arkadan kameralı, gerçekçi görünümlü 3D yarış. Her yarış bir 🎟️ bilet harcar.
 - **Bilet:** Her matematik turu 1 bilet verir, en fazla 3 birikir. Ebeveyn görevleri bu sınıra takılmadan bilet verebilir.
 - **Altın 🪙:** Matematik turunda yıldız başına 2; Zor seviyede +2, yeni rekorda +1. Kartopu Savaşı'nı kazanınca 3 + yıldız, kaybedince 1, 2 oyunculu maçta 2. Dükkânda su balonu (1), boya küpü (2), balık (3) gibi eşyalar alınır. Alınan eşyalar savaşta penguenin çantasına gelir; önce bölümün bedava verdikleri, sonra çantadakiler harcanır.
 - **Yıldız ★:** Hiç harcanmaz, Bahçem'i büyütür.
@@ -40,6 +41,21 @@ Altta dört sekme var (yatay ekranda solda): **Öğren**, **Oyunlar**, **Bahçem
 - **Altın:** Tek kişide sıraya göre 5 / 4 / 3 / 2; İki kişi ve Sırayla'da 5.
 - **Garaj:** Penguenin ve kedinin arabası için boya (5–10 altın) ve tekerlek (Alev 7 altın). Yalnızca görünüş, hızı değiştirmez. Seçimler kayıtta `race` altında durur.
 - **Klavye:** Tek kişi ve Sırayla'da ↑ ↓ ve boşluk. İki kişide 1P W S D, 2P ↑ ↓ ←.
+
+## Blok Rallisi 3D (v23)
+
+- **Oynanış:** Arabanın arkasından kamera; 6 araba, 4 şerit, 2 tur (yaklaşık 2 dakika). Ekranın sol / sağ yarısına basılı tutmak direksiyon; klavyede ← →, boşluk kutu eşyası, 1 2 3 çanta eşyaları. Oyuncu en arkadan başlar. Rakipler oyuncunun yakınında kalır (öndeyse biraz yavaşlar, gerideyse hızlanır), yarış hep çekişmeli.
+- **Sayı köprüsü:** Turda 4 kafes çelik köprü; her şeridin üstünde LED tabelada bir sayı, köprüden önceki 110 metrede şeritler renkli ve sayılar asfalta yazılı. Soru köprüye 190 metre kala ekrana gelir ve bölgede herkes yavaşlar (toplam yaklaşık 7 saniye düşünme süresi). Doğru şerit turbo verir. Zorluk Sayı Bahçesi'ndeki seviyeyi izler.
+- **Pist:** 4 rampa (uç!), koni grupları (yavaşlatır), çamur (yavaşlatır), yağ (döndürür). Yolda iki sıra ? kutusu var (eski 3D denemesinin yarısı); kutudan turbo, füze, yağ, kalkan, kartopu ya da koni çıkar. Geride kalan daha çok turbo ve füze bulur.
+- **Çanta ve dükkân:** Dükkânın "Yarış" bölümünden altınla alınan eşyalar (kayıtta `inv.r_*`). Yarıştan önce çantaya en fazla 3 tane konur; yalnızca kullanılan eşya harcanır, kullanılmayan stokta kalır. Son çanta seçimi `race3dBag` altında hatırlanır.
+  - 🚀 Hedef Füzesi (4): Önündeki arabalardan birini sıra numarasıyla seçersin ("3. sıradakini vur"); seçerken oyun durur.
+  - 🛢️ Yağ Birikintisi (2), 🚧 Koni Seti (2): Arkana bırakılır.
+  - ⚪ Kartopu (3): Aynı şeritteki öndekine düz gider. ⚡ Yıldırım (7): Öndeki bütün arabalar yavaşlar.
+  - 🛡️ Kalkan (3): İlk saldırıyı yutar (20 saniye). 🛞 Kaymaz Lastik (3): Bir tur boyunca yağ ve çamur işlemez. 🔥 Turbo (3): 3 saniye.
+  - 🚦 Süper Start (2): Çantada olması yeter; yeşil ışıkta kendiliğinden turbo.
+- **Rakipler:** Kutu eşyalarını ve başta rastgele verilen birer çanta eşyasını kullanırlar (öndeki varsa füze, arkadaki varsa yağ / koni).
+- **Altın:** Sıraya göre 5 / 4 / 3 / 2 / 1 / 1.
+- **Görüntü:** Three.js r128 (`yaris3d/three.min.js`, MIT) yerel kopyadan, çevrimdışı çalışır. Fiziksel tabanlı malzemeler (vernikli boya, metal jant), gökyüzü yansıması, güneş gölgesi, sis, ACES ton eşleme; asfalt, çim, çakıl dokuları kodla üretilir. Araba parçaları malzemeye göre birleştirilir (çizim çağrısı az). Telefon yavaş kalırsa önce çözünürlük, sonra gölge kalitesi kendiliğinden düşer. Yazı tipi Exo 2 (SIL OFL, `fonts/OFL-exo2.txt`), Türkçe harfli küçük alt küme.
 
 ## Kartopu Savaşı
 
