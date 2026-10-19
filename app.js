@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 24;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v24)
+const VERSION = 25;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v25)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -42,7 +42,7 @@ const STARS_PER_FRIEND = 3;
 // Her matematik turu bir maç bileti verir; bilet en fazla TICKET_MAX birikir ki matematik → oyun döngüsü korunsun.
 const TICKET_MAX = 3;
 // Savaş eşyaları (anahtarlar savas/game.js içindeki ITEMS ile aynı). num: sayı seçerek kullanılır.
-const SHOP_GROUPS = [['throw', 'Atılanlar'], ['num', 'Sayılı'], ['def', 'Destek'], ['race', 'Yarış (Blok Rallisi 3D)']];
+const SHOP_GROUPS = [['throw', 'Atılanlar'], ['num', 'Sayılı'], ['def', 'Destek'], ['race', 'Yarış eşyaları']];
 const SHOP = [
   { key: 'balloon', dmg: "37", desc: "Patlayınca her yer su olur. Çarptığı yerde büyük bir çukur açar, rakibi ıslatır.", how: "Çantadan seç, parmağını geri çek, bırak.", tip: "Rüzgârdan çok etkilenir: rüzgâr okuna bak!", g: 'throw', ico: '💦', name: 'Su Balonu', info: 'Büyük patlar', price: 1 },
   { key: 'fish', dmg: "37", desc: "Çok hafif uçar, neredeyse dümdüz gider. Uzaktaki rakibe yetişir.", how: "Çantadan seç, geri çek, bırak.", tip: "Rüzgâr onu pek itemez.", g: 'throw', ico: '🐟', name: 'Balık', info: 'Dümdüz uçar', price: 3 },
@@ -646,10 +646,13 @@ function goWar(path = 'savas/') {
 }
 
 /* ----- Dükkân ----- */
+// Dükkân iki kapı: Kartopu Savaşı eşyaları ve yarış eşyaları ayrı sekmede
+let shopTab = 'war';
 function renderShop() {
   $('shopCoins').textContent = Store.d.coins;
+  for (const b of document.querySelectorAll('.shop-tab')) { const on = b.dataset.st === shopTab; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
   const g = $('shopGrid'); g.innerHTML = '';
-  for (const [grp, title] of SHOP_GROUPS) {
+  for (const [grp, title] of SHOP_GROUPS.filter(([k]) => (k === 'race') === (shopTab === 'race'))) {
     g.append(el('h2', 'shop-group', title));
     for (const it of SHOP.filter(x => x.g === grp)) {
       const card = el('div', 'shop-card'), have = Store.d.inv[it.key] || 0, poor = Store.d.coins < it.price;
@@ -1355,6 +1358,7 @@ const openTab = {
   shop: () => { show('shop'); renderShop(); },
 };
 for (const t of document.querySelectorAll('.tab')) t.onclick = () => { if (screen === t.dataset.tab) return; Sound.play('tap'); openTab[t.dataset.tab](); };
+for (const b of document.querySelectorAll('.shop-tab')) b.onclick = () => { if (shopTab === b.dataset.st) return; Sound.play('tap'); shopTab = b.dataset.st; renderShop(); $('shopGrid').scrollTop = 0; };
 $('tasksBtn').onclick = () => { Sound.play('tap'); show('tasks'); renderTasks(); };
 $('settingsBtn').onclick = () => { Sound.play('tap'); openSettings(); };
 for (const c of document.querySelectorAll('.prac')) c.onclick = () => { Sound.play('tap'); catGroup = c.dataset.g; show('cat'); renderCat(); };
@@ -1394,7 +1398,7 @@ new MutationObserver(ms => {
 goldify(document.body);
 
 // Yarıştaki "Dükkândan yarış eşyası al" bağlantısı ../#shop ile gelir
-if (location.hash === '#shop') { history.replaceState(null, '', location.pathname + location.search); openTab.shop(); }
+if (location.hash === '#shop' || location.hash === '#shop-race') { shopTab = location.hash === '#shop-race' ? 'race' : 'war'; history.replaceState(null, '', location.pathname + location.search); openTab.shop(); }
 else {
   show('home');
   renderHome();
