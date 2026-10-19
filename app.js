@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 21;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v21)
+const VERSION = 22;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v22)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -531,9 +531,14 @@ let screen = 'home', mode = null, round = null, cur = null, busy = false, nextTi
 const lv = () => Store.d.level;
 const modeOf = k => MODES.find(m => m.key === k);
 
+const TABS = ['home', 'games', 'garden', 'shop'];
 function show(name) {
   screen = name;
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('active', s.id === name);
+  // Alt sekme çubuğu yalnızca dört ana bölümde görünür; alıştırma, tur ve sonuç ekranında gizlenir
+  document.body.classList.toggle('tabbed', TABS.includes(name));
+  for (const t of document.querySelectorAll('.tab')) { const on = t.dataset.tab === name; t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); }
+  if (TABS.includes(name)) renderWallet();
 }
 
 const LEVEL_NAME = { 1: 'Kolay', 2: 'Orta', 3: 'Zor' };
@@ -550,20 +555,44 @@ function renderHome() {
   $('lootTicket').textContent = full ? `🎟️ ${TICKET_MAX}/${TICKET_MAX} dolu` : '🎟️ 1 bilet';
   const maxCoins = 6 + (lv() === 3 ? 2 : 0) + (bestOf(m.key) < 3 ? 1 : 0);
   $('lootCoins').textContent = `🪙 ${maxCoins} altına kadar`;
-  $('warSub').textContent = Store.d.tickets > 0 ? `🎟️ ${Store.d.tickets} bilet` : '🎟️ yok';
-  $('warBtn').classList.toggle('no-ticket', !(Store.d.tickets > 0));
-  $('raceSub').textContent = $('warSub').textContent;
-  $('raceBtn').classList.toggle('no-ticket', !(Store.d.tickets > 0));
-  $('gardenSub').textContent = `★ ${Store.d.stars}`;
-  $('gardenDot').hidden = !(friendsFor(Store.d.stars) > Store.d.seen || worldState(Store.d.stars).open > (Store.d.worldSeen || 1));
-  $('shopSub').textContent = `🪙 ${Store.d.coins}`;
+  renderWallet();
   const doable = Store.d.tasks.filter(t => taskState(t) === 'open').length;
   $('taskBadge').hidden = !doable; $('taskBadge').textContent = doable;
-  for (const c of document.querySelectorAll('.cat')) {
+  $('taskSub').textContent = doable ? `${doable} görev seni bekliyor` : Store.d.tasks.length ? 'Hepsini yaptın!' : 'Ebeveynin görev ekleyebilir';
+  for (const c of document.querySelectorAll('.prac')) {
     const list = MODES.filter(x => x.g === c.dataset.g), got = list.reduce((n, x) => n + bestOf(x.key), 0), max = list.length * 3;
-    c.querySelector('.c-bar i').style.width = (got / max * 100) + '%';
+    c.querySelector('.p-bar i').style.width = (got / max * 100) + '%';
     c.querySelector('em').textContent = `${got}/${max} ★`;
   }
+}
+// Üstteki cüzdan ve sekme çubuğundaki işaretler (her sekmede güncel kalsın)
+function renderWallet() {
+  const n = Store.d.tickets;
+  $('wTickets').textContent = n; $('wCoins').textContent = Store.d.coins; $('wStars').textContent = Store.d.stars;
+  $('wTicketChip').setAttribute('aria-label', `${n} bilet, en fazla ${TICKET_MAX}`);
+  $('tabTickets').hidden = !(n > 0); $('tabTickets').textContent = n;
+  $('gardenDot').hidden = !(friendsFor(Store.d.stars) > Store.d.seen || worldState(Store.d.stars).open > (Store.d.worldSeen || 1));
+}
+// Oyunlar sekmesi: bilet göstergesi ve iki oyun
+function warNext() {
+  try {
+    const st = (JSON.parse(localStorage.getItem('war-of-blocks.v1')) || {}).stars || [];
+    for (let i = 0; i < 12; i++) if (!(st[i] > 0)) return i + 1;
+    return 0;
+  } catch (e) { return 1; }
+}
+function renderGames() {
+  renderWallet();
+  const n = Store.d.tickets;
+  $('gCoins').textContent = Store.d.coins;
+  $('tSlots').querySelectorAll('i').forEach((s, i) => s.classList.toggle('on', i < n));
+  $('tTitle').textContent = n > 0 ? `${n} biletin var` : 'Biletin yok';
+  $('tSub').textContent = n >= TICKET_MAX ? 'Biletlerin dolu, hadi oyna! Her oyun 1 bilet.' : n > 0 ? 'Her oyun 1 bilet. Bir tur bitir, 1 bilet daha kazan.' : 'Bir matematik turu bitir, bilet kazan.';
+  $('tGo').hidden = n > 0;
+  for (const id of ['warBtn', 'raceBtn']) $(id).classList.toggle('no-ticket', !(n > 0));
+  const w = warNext();
+  $('warSub').textContent = (w ? `Bölüm ${w} seni bekliyor` : 'Bütün bölümler bitti!') + ' · 1 ya da 2 kişi';
+  $('raceNew').hidden = !!Store.d.raceSeen;
 }
 // Alıştırma sayfası: zorluk + o gruptaki alıştırmalar
 let catGroup = 'num';
@@ -1303,14 +1332,20 @@ function confetti(n = 18) {
 for (const b of document.querySelectorAll('.level')) b.onclick = () => { Sound.play('tap'); Store.d.level = +b.dataset.level; Store.save(); renderCat(); };
 $('playBtn').onclick = () => { Sound.play('tap'); startRound(nextMode()); };
 $('warBtn').onclick = () => { Sound.play('tap'); goWar(); };
-$('raceBtn').onclick = () => { Sound.play('tap'); goWar('yaris/'); };
+$('raceBtn').onclick = () => { Sound.play('tap'); if (Store.d.tickets > 0 && !Store.d.raceSeen) { Store.d.raceSeen = true; Store.save(); } goWar('yaris/'); };
+$('tGo').onclick = () => { Sound.play('tap'); startRound(nextMode()); };
 // Oyundan geri tuşuyla dönülürse sayfa bellekten gelir; oyunda kazanılan altın ve harcanan bilet kaybolmasın
-addEventListener('pageshow', e => { if (e.persisted) { Store.load(); renderHome(); } });
-$('gardenBtn').onclick = () => { Sound.play('tap'); show('garden'); renderGarden(); };
-$('shopBtn').onclick = () => { Sound.play('tap'); show('shop'); renderShop(); };
+addEventListener('pageshow', e => { if (e.persisted) { Store.load(); renderHome(); if (screen === 'games') renderGames(); } });
+const openTab = {
+  home: () => goHome(),
+  games: () => { show('games'); renderGames(); },
+  garden: () => { show('garden'); renderGarden(); },
+  shop: () => { show('shop'); renderShop(); },
+};
+for (const t of document.querySelectorAll('.tab')) t.onclick = () => { if (screen === t.dataset.tab) return; Sound.play('tap'); openTab[t.dataset.tab](); };
 $('tasksBtn').onclick = () => { Sound.play('tap'); show('tasks'); renderTasks(); };
 $('settingsBtn').onclick = () => { Sound.play('tap'); openSettings(); };
-for (const c of document.querySelectorAll('.cat')) c.onclick = () => { Sound.play('tap'); catGroup = c.dataset.g; show('cat'); renderCat(); };
+for (const c of document.querySelectorAll('.prac')) c.onclick = () => { Sound.play('tap'); catGroup = c.dataset.g; show('cat'); renderCat(); };
 const goHome = () => { clearTimeout(nextTimer); Voice.stop(); show('home'); renderHome(); setTimeout(celebrateNext, 400); };
 $('homeBtn').onclick = goHome;
 $('gardenHomeBtn').onclick = goHome;
@@ -1346,6 +1381,7 @@ new MutationObserver(ms => {
 }).observe(document.body, { childList: true, subtree: true });
 goldify(document.body);
 
+show('home');
 renderHome();
 setTimeout(celebrateNext, 600);
 

@@ -19,11 +19,12 @@
 <main id="app">
   <section id="home" class="screen active">
     <header class="top">
-      <h1 class="home-title">Sayı Bahçesi</h1>
-      <div class="tools">
-        <button class="icon-btn tasks-icon" id="tasksBtn" aria-label="Görevlerim">📋<span class="badge" id="taskBadge" hidden>0</span></button>
-        <button class="icon-btn soft" id="settingsBtn" aria-label="Ayarlar">⚙️</button>
+      <div class="wallet">
+        <span class="wchip" style="--c:#E5483B" id="wTicketChip">🎟️ <b id="wTickets">0</b><small>/3</small></span>
+        <span class="wchip" style="--c:#F5A524">🪙 <b id="wCoins">0</b></span>
+        <span class="wchip" style="--c:#34C17B"><span class="star">★</span> <b id="wStars">0</b></span>
       </div>
+      <button class="icon-btn soft" id="settingsBtn" aria-label="Ayarlar">⚙️</button>
     </header>
     <div class="home-body">
       <button class="hero" id="playBtn">
@@ -35,20 +36,39 @@
         <span class="hero-loot"><span>Bitirince:</span><span class="chip" id="lootTicket"></span><span class="chip" id="lootCoins"></span></span>
       </button>
       <div class="home-side">
-        <div class="rewards">
-          <button class="reward" id="warBtn" style="--c:#E5483B;--bg:#FDE7E5"><span class="r-ico">⛄</span><span class="r-lbl">Kartopu Savaşı</span><span class="r-sub" id="warSub"></span></button>
-          <button class="reward" id="raceBtn" style="--c:#3FA9F5;--bg:#E3F2FD"><span class="r-ico">🏎️</span><span class="r-lbl">Blok Rallisi</span><span class="r-sub" id="raceSub"></span></button>
-          <button class="reward" id="gardenBtn" style="--c:#34C17B;--bg:#E1F6EA"><span class="tag" id="gardenDot" hidden>yeni</span><span class="r-ico">🌻</span><span class="r-lbl">Bahçem</span><span class="r-sub" id="gardenSub"></span></button>
-          <button class="reward" id="shopBtn" style="--c:#F5A524;--bg:#FEF1DA"><span class="r-ico">🛒</span><span class="r-lbl">Dükkân</span><span class="r-sub" id="shopSub"></span></button>
+        <span class="sec-k">Alıştırmalar</span>
+        <div class="pracs">
+          <button class="prac" data-g="num" style="--c:#3FA9F5;--bg:#E3F2FD"><span class="p-ico">2+3</span><b>Sayılar</b><span class="p-prog"><span class="p-bar"><i></i></span><em></em></span></button>
+          <button class="prac" data-g="shape" style="--c:#9B6BEF;--bg:#F0E8FD"><span class="p-ico shape">🔺🔵</span><b>Şekiller</b><span class="p-prog"><span class="p-bar"><i></i></span><em></em></span></button>
         </div>
-        <div class="cats">
-          <button class="cat" data-g="num" style="--c:#3FA9F5;--bg:#E3F2FD"><span class="c-ico">2+3</span><span class="c-txt"><b>Sayılar</b><small>Toplama, çıkarma, dizi, boşluk</small><span class="c-prog"><span class="c-bar"><i></i></span><em></em></span></span><span class="chev" aria-hidden="true">›</span></button>
-          <button class="cat" data-g="shape" style="--c:#9B6BEF;--bg:#F0E8FD"><span class="c-ico">🔺🔵</span><span class="c-txt"><b>Şekiller</b><small>Örüntü, ayna, farklı olan, sudoku</small><span class="c-prog"><span class="c-bar"><i></i></span><em></em></span></span><span class="chev" aria-hidden="true">›</span></button>
-        </div>
+        <button class="task-card" id="tasksBtn"><span class="t-ico">📋<span class="badge" id="taskBadge" hidden>0</span></span><span class="t-txt"><b>Görevlerim</b><small id="taskSub"></small></span><span class="chev" aria-hidden="true">›</span></button>
       </div>
     </div>
   </section>
-
+  <section id="games" class="screen">
+    <header class="top">
+      <h1>Oyunlar</h1>
+      <span class="wchip" style="--c:#F5A524">🪙 <b id="gCoins">0</b></span>
+    </header>
+    <div class="games-body">
+      <div class="ticket-card" id="ticketCard">
+        <span class="t-slots" id="tSlots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="t-txt"><b id="tTitle"></b><small id="tSub"></small></span>
+        <button class="t-go" id="tGo" hidden>Tur oyna</button>
+      </div>
+      <div class="game-cards">
+        <button class="game-card" id="warBtn" style="--c:#3FA9F5">
+          <span class="g-art art-war" aria-hidden="true"><i class="hill"></i><i class="sm1"></i><i class="sm2"></i><i class="arc"></i><i class="ball"></i><i class="cat"></i></span>
+          <span class="g-info"><span class="g-txt"><b>Kartopu Savaşı</b><small id="warSub"></small></span><span class="g-cost">🎟️ 1</span></span>
+        </button>
+        <button class="game-card" id="raceBtn" style="--c:#FFC21F">
+          <span class="g-art art-race" aria-hidden="true"><i class="hill"></i><i class="road"></i><i class="curb"></i><i class="dash"></i><i class="body"></i><i class="back"></i><i class="drv"></i><i class="w1"></i><i class="w2"></i><i class="sp1"></i><i class="sp2"></i></span>
+          <span class="g-new" id="raceNew" hidden>yeni</span>
+          <span class="g-info"><span class="g-txt"><b>Blok Rallisi</b><small>Sayı kapısı, turbo · 1 ya da 2 kişi</small></span><span class="g-cost">🎟️ 1</span></span>
+        </button>
+      </div>
+    </div>
+  </section>
   <section id="cat" class="screen">
     <header class="top">
       <button class="icon-btn back" aria-label="Ana sayfa">‹</button>
@@ -148,6 +168,12 @@
       </div>
     </div>
   </section>
+  <nav class="tabbar" id="tabbar" aria-label="Bölümler">
+    <button class="tab" data-tab="home" style="--tc:#0F6236;--tb:#E1F6EA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg><span>Öğren</span></button>
+    <button class="tab" data-tab="games" style="--tc:#B5291F;--tb:#FDE7E5"><span class="badge" id="tabTickets" hidden>0</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7 10.5v4M5 12.5h4"/><circle cx="15.5" cy="11.5" r="1" fill="currentColor"/><circle cx="17.5" cy="13.5" r="1" fill="currentColor"/></svg><span>Oyunlar</span></button>
+    <button class="tab" data-tab="garden" style="--tc:#1F7A45;--tb:#E1F6EA"><span class="t-dot" id="gardenDot" hidden></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M12 5V3M12 13v8M9 8H7M17 8h-2M9.9 5.9L8.5 4.5M15.5 4.5l-1.4 1.4"/><path d="M12 17c-2-2.2-4.5-2.2-6-1 1.5 2.4 4 2.6 6 1zM12 17c2-2.2 4.5-2.2 6-1-1.5 2.4-4 2.6-6 1z"/></svg><span>Bahçem</span></button>
+    <button class="tab" data-tab="shop" style="--tc:#9A5A00;--tb:#FEF1DA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16l-1.4 10.2a2 2 0 0 1-2 1.8H7.4a2 2 0 0 1-2-1.8z"/><path d="M8.5 9V7.5a3.5 3.5 0 0 1 7 0V9"/></svg><span>Dükkân</span></button>
+  </nav>
 </main>
 <div id="modal" class="modal" hidden><div class="modal-card" id="modalCard"></div></div>
 <div id="ver" class="ver" aria-hidden="true"></div>

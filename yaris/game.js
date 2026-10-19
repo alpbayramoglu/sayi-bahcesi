@@ -295,6 +295,7 @@ const THEMES = {
     road: ['#CF9256', '#A96E39'], tex: 'plank', lane: 'rgba(255,248,225,.7)', curb: ['#FFFFFF', '#2AA6D8'],
     fg: ['#F3D490', '#DDB46A'], verge: '#F0CF86', smoke: 'rgba(255,250,235,', amb: 'spray', props: 'palm', fgProp: 'barrel' },
 };
+const LANE_COL = ['#FF7AB6', '#FFC94D', '#7FD3FF'];
 const LY = [272, 312, 352], LS = [.84, .92, 1];
 const laneY = l => l <= 1 ? lerp(LY[0], LY[1], clamp(l, 0, 1)) : lerp(LY[1], LY[2], clamp(l - 1, 0, 1));
 const laneS = l => l <= 1 ? lerp(LS[0], LS[1], clamp(l, 0, 1)) : lerp(LS[1], LS[2], clamp(l - 1, 0, 1));
@@ -407,6 +408,7 @@ class Scene {
     this.drawSide(c, X0, X1, S, t);
     this.drawRoad(c, X0, X1, H, S, t);
     const objs = this.objectsInView();
+    for (const g of (this.roadGates || [])) this.drawGateRoad(c, g, t);
     for (const o of objs) if (o.type === 'finish') this.drawFinish(c, o, t);
     for (const o of objs) if (o.type === 'ramp' || o.type === 'boost' || o.type === 'puddle' || o.type === 'ice') this.drawFlat(c, o, t);
     const gate = objs.find(o => o.type === 'gate');
@@ -735,10 +737,28 @@ class Scene {
     c.lineWidth = 6; c.strokeStyle = INK; c.strokeText(g.q + ' = ?', 0, -6); c.fillStyle = '#FFFFFF'; c.fillText(g.q + ' = ?', 0, -6);
     c.restore();
   }
+  // Sayı kapısından önceki yol: her şerit kendi rengine boyanır, sayısı asfalta yazılır
+  drawGateRoad(c, g, t) {
+    const zone = g.zone || 1900, x1 = this.sx(g.wx), x0 = this.sx(g.wx - zone);
+    const bands = [[ROAD_T, 292], [292, 332], [332, ROAD_B]];
+    for (let ln = 0; ln < 3; ln++) {
+      const [y0, y1] = bands[ln], col = ln === g.correct && g.solved ? '#4CFF9A' : LANE_COL[ln];
+      const gr = c.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, rgba(col, 0)); gr.addColorStop(.18, rgba(col, .34)); gr.addColorStop(1, rgba(col, .5));
+      c.fillStyle = gr; c.fillRect(x0, y0 + 3, x1 - x0, y1 - y0 - 6);
+      c.font = `800 30px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+      for (let wx = g.wx - 170; wx > g.wx - zone + 200; wx -= 380) {
+        const x = this.sx(wx); if (x < -80 || x > 2400) continue;
+        c.save(); c.translate(x, (y0 + y1) / 2 + 1); c.scale(1.3, .72);
+        c.lineWidth = 7; c.strokeStyle = 'rgba(30,34,51,.55)'; c.strokeText(String(g.nums[ln]), 0, 0);
+        c.fillStyle = '#FFFFFF'; c.fillText(String(g.nums[ln]), 0, 0);
+        c.restore();
+      }
+    }
+  }
   drawGateLane(c, g, ln, t) {
     const x = this.sx(g.wx), y = laneY(ln), s = laneS(ln), fl = (g.flashT || [0, 0, 0])[ln];
     const ok = ln === g.correct && g.solved;
-    const col = ok ? '#4CFF9A' : ['#FF7AB6', '#FFC94D', '#7FD3FF'][ln];
+    const col = ok ? '#4CFF9A' : LANE_COL[ln];
     c.save(); c.translate(x, y); c.scale(s, s);
     // ışık perdesi
     c.save(); c.globalCompositeOperation = 'lighter';
@@ -748,10 +768,10 @@ class Scene {
     c.restore();
     // sayı balonu
     const bob = Math.sin(t * 3 + ln * 2) * 2, sc = 1 + fl * .35;
-    c.save(); c.translate(4, -82 + bob); c.scale(sc, sc);
-    ell(c, 0, 0, 19, 19); c.fillStyle = INK; c.fill(); ell(c, 0, 0, 16.5, 16.5); c.fillStyle = col; c.fill();
-    c.fillStyle = 'rgba(255,255,255,.45)'; ell(c, -5, -7, 7, 4, -.4); c.fill();
-    c.font = `800 24px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = INK; c.fillText(String(g.nums[ln]), 0, 1.5);
+    c.save(); c.translate(4, -86 + bob); c.scale(sc, sc);
+    ell(c, 0, 0, 23, 23); c.fillStyle = INK; c.fill(); ell(c, 0, 0, 20, 20); c.fillStyle = col; c.fill();
+    c.fillStyle = 'rgba(255,255,255,.45)'; ell(c, -6, -8, 8, 4.5, -.4); c.fill();
+    c.font = `800 28px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = INK; c.fillText(String(g.nums[ln]), 0, 1.5);
     c.restore();
     c.restore();
   }
@@ -1041,7 +1061,10 @@ const fmt = s => s.toFixed(1).replace('.', ',');
 /* ================= yarış =================
    mode: 'single' (1 oyuncu + 3 bilgisayar), 'duo' (2 oyuncu aynı ekranda + 2 bilgisayar),
          'solo' (sırayla: tek araba, ikinci turda önceki turun hayaleti), 'demo' (menü arka planı) */
-const LEN = { single: 20000, duo: 20000, solo: 15000, demo: 14000 };
+const LEN = { single: 18000, duo: 18000, solo: 14000, demo: 14000 };
+const ZONE = 1900;      // kapıdan önceki düşünme bölgesi (dünya birimi)
+const ZONE_SPD = 250;  // bu bölgede herkesin en yüksek hızı: soru 8-10 saniye ekranda kalır
+const ASK = 3000;      // soru kapıya bu kadar kala gösterilir
 class Game {
   constructor(o) {
     this.mode = o.mode; this.theme = o.theme || 'meadow'; this.onEnd = o.onEnd; this.sound = o.mode !== 'demo';
@@ -1052,7 +1075,7 @@ class Game {
     s.objs = [{ type: 'finish', key: 'start', wx: 70, label: 'BAŞLA' }, { type: 'finish', key: 'fin', wx: this.len, label: 'BİTİŞ' }];
     s.onEvent = (type, r, ob, ln) => this.onEvent(type, r, ob, ln);
     this.t = o.mode === 'demo' ? 0 : -3; this.camS = 0; this.z = 1; this.projs = []; this.press = {}; this.done = false; this.endAt = null;
-    const mk = (spec, x) => Object.assign({}, spec, { wx: 0, lane: 1, laneT: 1, spd: 0, base: 440, item: null, roll: null, itemHold: 0, slowT: 0, shieldT: 0 }, x);
+    const mk = (spec, x) => Object.assign({}, spec, { wx: 0, lane: 1, laneT: 1, spd: 0, base: 400, item: null, roll: null, itemHold: 0, slowT: 0, shieldT: 0 }, x);
     if (o.mode === 'solo') {
       this.me = mk(specFor(o.who), { human: true, side: 0 });
       this.racers = [this.me]; this.players = [this.me]; this.rec = [];
@@ -1067,8 +1090,8 @@ class Game {
       this.racers = [this.me, other, c1, c2]; this.players = [this.me];
     } else {
       const ai = o.mode === 'demo';
-      const p1 = mk(specFor('P1'), { human: !ai, ai, side: 0, lane: 0, laneT: 0, base: ai ? 455 : 440 });
-      const p2 = mk(specFor('P2'), { human: !ai, ai, side: 1, lane: 2, laneT: 2, base: ai ? 372 : 440 });
+      const p1 = mk(specFor('P1'), { human: !ai, ai, side: 0, lane: 0, laneT: 0, base: ai ? 415 : 400 });
+      const p2 = mk(specFor('P2'), { human: !ai, ai, side: 1, lane: 2, laneT: 2, base: ai ? 345 : 400 });
       if (p2.color === p1.color) p2.color = p1.color === '#E5483B' ? '#FFC21F' : '#E5483B';
       const cs = cpuKeys([p1.color, p2.color]);
       const c1 = mk(BASE[cs[0]], { ai: true, cpu: true, lane: 1, laneT: 1, wx: -100 });
@@ -1082,13 +1105,19 @@ class Game {
     if (this.cache.has(k)) return this.cache.get(k);
     let ob = null; const wx = k * 640 + hash(k, 3 + this.seed) * 160, h = hash(k + this.seed * 17, 7), ln = Math.floor(hash(k + this.seed * 5, 5) * 3);
     if (wx > 900 && wx < this.len - 500) {
-      if (k % 5 === 2) ob = Object.assign({ type: 'gate', key: 'g' + k, wx, solved: false, flashT: [0, 0, 0] }, gateQuestion(k, this.seed, this.lv));
+      if (k % 7 === 3) ob = Object.assign({ type: 'gate', key: 'g' + k, wx, zone: ZONE, solved: false, flashT: [0, 0, 0] }, gateQuestion(k, this.seed, this.lv));
       else if (h < .32) ob = { type: 'box', key: 'k' + k, wx };
       else if (h < .52) ob = { type: 'ramp', key: 'r' + k, wx, lane: ln, h: 52, len: 240 };
       else if (h < .72) ob = { type: 'boost', key: 'b' + k, wx, lane: ln };
       else if (h < .88) ob = { type: 'puddle', key: 'p' + k, wx, lane: ln, hits: new Set() };
     }
     this.cache.set(k, ob); return ob;
+  }
+  nextGate(x, ahead) { // x'in önündeki ilk kapı (ahead birim içinde)
+    for (let k = Math.floor((x - 300) / 640); k <= Math.floor((x + ahead) / 640) + 1; k++) {
+      const o = this.gen(k); if (o && o.type === 'gate' && o.wx > x && o.wx - x <= ahead) return o;
+    }
+    return null;
   }
   rankOf(r) { return 1 + this.racers.filter(x => !x.ghost && x !== r && (x.finishT != null ? (r.finishT == null || x.finishT < r.finishT) : (r.finishT == null && x.wx > r.wx))).length; }
   pickItem(r) {
@@ -1153,7 +1182,7 @@ class Game {
     if (r.item && r.itemHold > 1 + (r.num % 3) * .5) this.useItem(r);
     if (r.cpu) { // lastik bant: bilgisayarlar oyuncuların yakınında kalsın
       const mid = this.players.reduce((n, p) => n + p.wx, 0) / this.players.length;
-      r.base = r.wx > mid + 350 ? 385 : r.wx < mid - 350 ? 520 : 435;
+      r.base = r.wx > mid + 350 ? 350 : r.wx < mid - 350 ? 470 : 395;
     }
   }
   input(side, act) {
@@ -1179,6 +1208,7 @@ class Game {
       if (r.roll != null) { r.roll += dt; if (r.roll > .9) { r.roll = null; r.item = r.pending; if (r.human && this.sound) beep(990, .08); } }
       if (r.item) r.itemHold += dt;
       let tgt = go ? r.base + (r.turboT > 0 ? 320 : 0) - (r.slowT > 0 ? 230 : 0) : 0;
+      const ng = this.nextGate(r.wx, ZONE); if (ng) tgt = Math.min(tgt, ZONE_SPD);
       if (r.finishT != null) tgt = 300;
       r.spd = lerp(r.spd, tgt, 1 - Math.exp(-dt * (tgt > r.spd ? 2.4 : 5)));
       r.wx += r.spd * dt;
@@ -1276,6 +1306,8 @@ class Game {
   draw(c, W, Hh) {
     const s = this.s, t = s.t;
     const lines = Math.max(...this.players.map(p => p.turbo || 0)) * .9;
+    s.roadGates = [];
+    for (let k = Math.floor((this.camS - 900) / 640); k <= Math.floor((this.camS + 600 / this.z + ZONE) / 640) + 1; k++) { const o = this.gen(k); if (o && o.type === 'gate') s.roadGates.push(o); }
     s.render(c, W, Hh, { lines });
     if (this.mode === 'demo') return;
     const pressed = (side, act) => this.t - (this.press[side + act] ?? -9) < .15;
@@ -1319,14 +1351,33 @@ class Game {
       }
     }
     this.bar(c, W / 2, 26, 300);
-    // soru şeridi: kapı ekrana girmeden önce sorulur
-    const gate = s.objectsInView().find(o => { if (!o || o.type !== 'gate') return false; const gx = (s.sx(o.wx) - 432) * this.z + 432; return gx > W - 40 && o.wx - this.camS < 1200; });
-    if (gate && this.t > 0) {
-      c.save(); c.translate(W / 2, 96);
-      const txt = gate.q + ' = ?'; c.font = `800 26px ${FONT}`; const w = c.measureText(txt).width + 44;
-      rr(c, -w / 2 - 3, -22, w + 6, 44, 12); c.fillStyle = INK; c.fill(); rr(c, -w / 2, -19, w, 38, 10); c.fillStyle = '#E5483B'; c.fill();
-      c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 5; c.strokeStyle = INK; c.strokeText(txt, 0, 2); c.fillStyle = '#FFFFFF'; c.fillText(txt, 0, 2);
+    // soru: kapıya ASK birim kala çıkar, oyuncu kapıdan geçene kadar kalır
+    const ref = Math.min(...this.players.map(p => p.wx));
+    const gate = this.t > -2.5 ? this.nextGate(ref - 40, ASK) : null;
+    if (gate) {
+      c.save(); c.translate(W / 2, 98);
+      const txt = gate.q + ' = ?'; c.font = `800 34px ${FONT}`; const w = c.measureText(txt).width + 50;
+      rr(c, -w / 2 - 3, -27, w + 6, 54, 14); c.fillStyle = INK; c.fill(); rr(c, -w / 2, -24, w, 48, 12); c.fillStyle = '#E5483B'; c.fill();
+      c.fillStyle = 'rgba(255,255,255,.18)'; rr(c, -w / 2 + 6, -20, w - 12, 10, 5); c.fill();
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.lineWidth = 6; c.strokeStyle = INK; c.strokeText(txt, 0, 2); c.fillStyle = '#FFFFFF'; c.fillText(txt, 0, 2);
+      c.font = `800 14px ${FONT}`; c.lineWidth = 4; c.strokeText('doğru sayının şeridine geç', 0, 40); c.fillStyle = '#FFE36B'; c.fillText('doğru sayının şeridine geç', 0, 40);
       c.restore();
+      // kapı ekrana girene kadar sağda her şeridin hizasında tabela
+      const gx = (s.sx(gate.wx) - 432) * this.z + 432;
+      if (gx > W - 120) {
+        const sx0 = this.mode === 'duo' ? W - 206 : W - 196, centers = [265, 312, 352];
+        for (let ln = 0; ln < 3; ln++) {
+          const here = this.players.filter(p => Math.round(p.laneT) === ln);
+          const y = (centers[ln] - 300) * this.z + 300, sc = here.length ? 1.12 + .05 * Math.sin(t * 8) : 1;
+          c.save(); c.translate(sx0, y); c.scale(sc, sc);
+          rr(c, -39, -17, 78, 34, 12); c.fillStyle = INK; c.fill();
+          rr(c, -36, -14, 72, 28, 10); c.fillStyle = LANE_COL[ln]; c.fill();
+          c.fillStyle = INK; c.beginPath(); c.moveTo(-26, -7); c.lineTo(-12, 0); c.lineTo(-26, 7); c.closePath(); c.fill();
+          c.font = `800 26px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(gate.nums[ln]), 10, 1.5);
+          here.forEach((p, i) => { ell(c, -48 - i * 14, 0, 7, 7); c.fillStyle = INK; c.fill(); ell(c, -48 - i * 14, 0, 5, 5); c.fillStyle = p.color; c.fill(); });
+          c.restore();
+        }
+      }
     }
     if (this.t < .8) { // geri sayım
       const n = this.t < 0 ? String(Math.ceil(-this.t)) : 'BAŞLA!', ph = this.t < 0 ? 1 - ((-this.t) % 1) : this.t / .8;

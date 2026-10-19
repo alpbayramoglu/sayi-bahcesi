@@ -12,6 +12,13 @@ Her yayında iki yerde sürümü artır, ikisi aynı olmalı: `sw.js` içindeki 
 
 Yazı tipi: Baloo 2 (SIL OFL 1.1, `fonts/OFL-baloo2.txt`).
 
+## Ana sayfa (v22)
+
+Altta dört sekme var (yatay ekranda solda): **Öğren**, **Oyunlar**, **Bahçem**, **Dükkân**. Üstteki cüzdan bilet (en fazla 3), altın ve yıldızı hep gösterir.
+- **Öğren:** Oyna kartı (sıradaki tur), Sayılar ve Şekiller alıştırmaları, Görevlerim kartı.
+- **Oyunlar:** 3 yuvalı bilet göstergesi ve iki oyun kartı (Kartopu Savaşı'nda sıradaki bölüm yazar). Bilet yoksa "Tur oyna" düğmesi çıkar. Sekme düğmesinde bilet sayısı görünür.
+- Sekme çubuğu alıştırma, tur, sonuç, görevler ve ebeveyn ekranlarında gizlenir.
+
 ## Oyun, dükkân ve görevler
 
 - **Kartopu Savaşı** (`savas/`): War of Blocks bu uygulamanın içinde. Her maç bir 🎟️ bilet harcar.
@@ -27,7 +34,7 @@ Yazı tipi: Baloo 2 (SIL OFL 1.1, `fonts/OFL-baloo2.txt`).
 - **Oynanış:** Yandan görünüm, 3 şerit; araba kendi gider. Yukarı / aşağı ile şerit değişir, büyük düğme eşyayı kullanır. Aynı şeritte öndekine çarpan arkasında kalır.
 - **Modlar:** Tek kişi (3 bilgisayar rakip), İki kişi (aynı anda, aynı ekran: sol kenar Penguen, sağ kenar Kedi; 2 bilgisayar rakip), Sırayla (önce biri sürer, sonra öteki onun saydam "hayalet" arabasına karşı sürer, kısa süre kazanır).
 - **İki kişide kamera:** İki arabanın ortasını izler, aralarındaki mesafe açıldıkça uzaklaşır. Geride kalan ekrandan düşecek olursa öndekinin yanına ışınlanır ("YETİŞ!") ve kısa bir süre yavaş gider.
-- **Sayı kapısı:** Her yarışta birkaç kez yolun üstünde soru çıkar (toplama ya da çıkarma, zorluk Sayı Bahçesi'ndeki seviyeyi izler: Kolay 0–5, Orta 0–10, Zor 0–20). Doğru sayının şeridinden geçen turbo alır; yanlış şeritte ceza yok, doğru cevap ekranda gösterilir.
+- **Sayı kapısı:** Her yarışta 4 kez yolun üstünde soru çıkar. Soru kapıya varmadan yaklaşık 11 saniye önce ekrana gelir; kapıdan önceki bölgede herkes yavaşlar. O bölgede her şerit kendi rengine boyanır ve sayısı asfalta yazılır, sağdaki tabelalar hangi şeritte hangi sayının olduğunu gösterir (toplama ya da çıkarma, zorluk Sayı Bahçesi'ndeki seviyeyi izler: Kolay 0–5, Orta 0–10, Zor 0–20). Doğru sayının şeridinden geçen turbo alır; yanlış şeritte ceza yok, doğru cevap ekranda gösterilir.
 - **Eşyalar (? kutusundan):** ⚪ Kartopu (en yakın öndekine gider, kaydırıp yavaşlatır), 💧 Su balonu (arkaya birikinti bırakır), 🚀 Roket (2 saniye turbo), ☂️ Şemsiye (bir eşyayı ya da birikintiyi savuşturur). Geride kalan daha çok roket bulur. Pistte ayrıca rampa, hız oku ve su birikintisi var.
 - **Pistler:** Çiçek Vadisi, Buz Tepesi, Kale Yolu (gün batımı, havai fişek), Korsan Koyu (tahta iskele, uzakta top atan gemi).
 - **Altın:** Tek kişide sıraya göre 5 / 4 / 3 / 2; İki kişi ve Sırayla'da 5.
