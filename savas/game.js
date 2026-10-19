@@ -741,7 +741,7 @@ const ITEMS = {
   slice: { name: 'Dilim', emoji: '🍉', size: 15, kind: 'throw', r: 20, dmg: 6, wind: .4, word: 'ŞAP!', sound: 'splat', colors: ['#FF5A6E', '#7FE05C'], hidden: true },
   boomerang: { name: 'Bumerang', emoji: '🪃', spin: true, kind: 'throw', r: 28, dmg: 28, wind: 1.6, boomerang: true, word: 'VUUŞ!', sound: 'pof', colors: ['#C98E55', '#FFD23F'] },
   cake: { name: 'Pasta', emoji: '🎂', kind: 'throw', r: 24, dmg: 14, wind: .8, sticky: true, word: 'ŞLOP!', sound: 'splat', colors: ['#FFFFFF', '#FF9AD8', '#FFE0F0', '#E84BB0'] },
-  tickle: { name: 'Gıdıklama Tüyü', emoji: '🪶', spin: true, kind: 'throw', r: 32, dmg: 6, wind: 1.4, grav: .6, noCarve: true, push: 120, word: 'HİHİ!', sound: 'tickle', colors: ['#FFFFFF', '#FFE680'] },
+  tickle: { name: 'Gıdıklama Tüyü', emoji: '🪶', spin: true, kind: 'throw', r: 32, dmg: 6, wind: 1.4, grav: .6, light: true, noCarve: true, push: 120, word: 'HİHİ!', sound: 'tickle', colors: ['#FFFFFF', '#FFE680'] },
   pepper: { name: 'Hapşırık Biberi', emoji: '🌶️', kind: 'throw', r: 30, dmg: 20, carve: 14, wind: .6, sneeze: true, word: 'PUF!', sound: 'pof', colors: ['#E5483B', '#FF9F43', '#FFFFFF'] },
   clock: { name: 'Çalar Saat', emoji: '⏰', kind: 'throw', r: 38, dmg: 38, wind: .5, fuse: true, word: 'ÇIIIN!', sound: 'ring', colors: ['#FFD23F', '#E5483B', '#FFFFFF'] },
   frog: { name: 'Zıp Zıp Kurbağa', emoji: '🐸', kind: 'pick', r: 32, dmg: 30, word: 'VRAK!', sound: 'pof', colors: ['#7FE05C', '#2E7D32', '#FFFFFF'],
@@ -1585,6 +1585,11 @@ function stepProj(p, dt) {
       if (it.boomerang && p.t > .3) p.vx -= p.dir0 * 560 * dt;   // geri döner
       p.vy += GRAV * (it.grav || 1) * dt;
       p.x += p.vx * dt; p.y += p.vy * dt;
+      // hafif tüy ekranın üstünden çıkıp rüzgârla haritadan uçup gitmesin: tepeye değince süzülür, kenardan geri seker
+      if (it.light) {
+        if (p.y < 24 && p.vy < 0) { p.y = 24; p.vy = 0; }
+        if (p.x < 10 && p.vx < 0 || p.x > T.w - 10 && p.vx > 0) p.vx = -p.vx * .5;
+      }
     }
   }
   p.t += dt;
@@ -2503,10 +2508,25 @@ function drawFlakes(dt) {
   }
 }
 const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+// Emoji önce düz (döndürmeden) ayrı bir tuvale yazılır, sonra resim olarak çizilir.
+// iOS Safari döndürülmüş ya da aynalanmış emojiyi bazen renksiz, mavi bir gölge gibi çiziyor; resim her açıda renkli kalır.
+const emojiCache = new Map();
+function emojiImg(e, px) {
+  const q = Math.min(256, Math.max(16, Math.ceil(px / 16) * 16)), key = e + q;
+  let c = emojiCache.get(key);
+  if (!c) {
+    c = document.createElement('canvas'); c.width = c.height = Math.ceil(q * 1.3);
+    const g = c.getContext('2d');
+    g.font = `${q}px ${EMOJI_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(e, c.width / 2, c.height / 2 + q * .06);
+    emojiCache.set(key, c);
+  }
+  return c;
+}
 function emojiAt(e, x, y, size, rot = 0, flip = false) {
+  const img = emojiImg(e, size * (canvas.width / W) * Math.max(1, cam.z)), s = size * 1.3;
   ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(rot); if (flip) ctx.scale(-1, 1);
-  ctx.font = `${size}px ${EMOJI_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(e, 0, size * .06); ctx.restore();
+  ctx.drawImage(img, -s / 2, -s / 2, s, s); ctx.restore();
 }
 // Bir eşyanın simgesi (cx, cy merkezli, yaklaşık size piksel)
 function itemIcon(k, cx, cy, size, opt = {}) {
