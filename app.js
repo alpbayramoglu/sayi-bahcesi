@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 28;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v28)
+const VERSION = 29;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v29)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -871,6 +871,8 @@ Object.assign(GEN, {
     return { t: 'enw', w: pool[0], opts: pool };
   },
   enc(lv) {
+    // Orta: yarısı şekil adı (circle, star…); şıkların hepsi aynı renkte ki yalnız şekle bakılsın
+    if (lv === 2 && Math.random() < .5) { const sh = sample(EN_SHAPES, 4); return { t: 'enc', sh: sh[0], col: pick(EN_COL_SHAPE), opts: sh }; }
     if (lv < 3) { const cs = sample(lv === 1 ? EN_COL_EASY : Object.keys(EN_COLORS), lv === 1 ? 3 : 4); return { t: 'enc', c: cs[0], opts: cs }; }
     // Zor: renk + şekil ("red heart"); çeldiriciler aynı renk başka şekil, aynı şekil başka renk
     const c = pick(EN_COL_SHAPE), s = pick(EN_SHAPES);
@@ -915,6 +917,7 @@ const enAsk = (s, ans, opts, say, draw) => ({
 Object.assign(SB, {
   enw(s) { return enAsk(s, s.w, s.opts.map(w => [w, () => enEmo(enWord(w).e), w]), [enClip(s.w)]); },
   enc(s) {
+    if (s.sh) return enAsk(s, s.sh, s.opts.map(sh => [sh, () => shapeEl([sh, s.col]), sh]), ['ens_' + s.sh]);
     if (!s.s) return enAsk(s, s.c, s.opts.map(c => [c, () => enBlob(c), c]), ['enc_' + s.c]);
     return enAsk(s, s.c + '-' + s.s, s.opts.map(([c, sh]) => [c + '-' + sh, () => shapeEl([sh, c]), c + ' ' + sh]), [`encs_${s.c}_${s.s}`]);
   },

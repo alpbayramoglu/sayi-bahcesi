@@ -23,7 +23,7 @@ Altta dört sekme var (yatay ekranda solda): **Öğren**, **Oyunlar**, **Bahçem
 
 Ana sayfada üçüncü alıştırma kartı. Çocuk okuma bilmediği için ekranda İngilizce yazı yok: kelimeyi Samantha (Amerikan aksanı, `tools/make-audio.sh` içinde `EN_CLIPS`) söyler, şıklar emoji, renk lekesi ya da rakam. Soru 🔊 düğmesiyle dinlenir; ipucu Türkçe talimat + kelimeyi tekrar okur. Kolay 3, Orta ve Zor 4 şık. Övgüler ve tur sonu sesi İngilizce (Great job!, Perfect!…).
 - **Kelimeler:** ~80 kelime (aile, hayvan, yiyecek, ev/okul, vücut, giysi, oyuncak/taşıt, doğa). Kolay farklı kategorilerden, Orta aynı kategoriden, Zor sesi benzeyen çiftler (cat/hat, boat/goat/coat, mouse/house…).
-- **Renkler:** Kolay 4 temel renk, Orta 10 renk, Zor renk + şekil ("a red heart").
+- **Renkler:** Kolay 4 temel renk, Orta 10 renk ya da şekil adı (circle, square, triangle, star, heart; şıklar aynı renkte), Zor renk + şekil ("a red heart").
 - **Sayılar:** şıklar rakam. Kolay 1–10, Orta 1–20, Zor "thirteen / thirty" karışıklığı.
 - **Dinle ve Bul:** "Find three cats." Kolay 1–3, Orta 1–4 ve başka nesne, Zor 1–5.
 
