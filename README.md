@@ -19,6 +19,14 @@ Altta dört sekme var (yatay ekranda solda): **Öğren**, **Oyunlar**, **Bahçem
 - **Oyunlar:** 3 yuvalı bilet göstergesi ve iki oyun kartı (Kartopu Savaşı'nda sıradaki bölüm yazar). Bilet yoksa "Tur oyna" düğmesi çıkar. Sekme düğmesinde bilet sayısı görünür.
 - Sekme çubuğu alıştırma, tur, sonuç, görevler ve ebeveyn ekranlarında gizlenir.
 
+## İngilizce (v27)
+
+Ana sayfada üçüncü alıştırma kartı. Çocuk okuma bilmediği için ekranda İngilizce yazı yok: kelimeyi Samantha (Amerikan aksanı, `tools/make-audio.sh` içinde `EN_CLIPS`) söyler, şıklar emoji, renk lekesi ya da rakam. Soru 🔊 düğmesiyle dinlenir; ipucu Türkçe talimat + kelimeyi tekrar okur. Kolay 3, Orta ve Zor 4 şık.
+- **Kelimeler:** ~80 kelime (aile, hayvan, yiyecek, ev/okul, vücut, giysi, oyuncak/taşıt, doğa). Kolay farklı kategorilerden, Orta aynı kategoriden, Zor sesi benzeyen çiftler (cat/hat, boat/goat/coat, mouse/house…).
+- **Renkler:** Kolay 4 temel renk, Orta 10 renk, Zor renk + şekil ("a red heart").
+- **Sayılar:** Kolay 1–5 nesne sayarak, Orta 1–20 rakam, Zor "thirteen / thirty" karışıklığı.
+- **Dinle ve Bul:** "Find three cats." Kolay 1–3, Orta 1–4 ve başka nesne, Zor 1–5.
+
 ## Yeni şekil soruları (v26)
 
 Şekiller grubuna 5 mod eklendi; hepsi her seviyede 4 şıklı, şıklar resim. Soru verisi JSON, doğru cevap veriden hesaplanır, şıkların anahtarları birbirinden farklı olmak zorunda.

@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 26;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v26)
+const VERSION = 27;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v27)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -36,8 +36,12 @@ const MODES = [
   { key: 'view', g: 'shape', label: 'Gölge ve Bakış', ico: '👁️', c: '#475569' },
   { key: 'refl', g: 'shape', label: 'Yansıma', ico: '🪞', c: '#7C3AED' },
   { key: 'anal', g: 'shape', label: 'İlişki', ico: 'A→B', c: '#DB2777' },
+  { key: 'enw', g: 'en', label: 'Kelimeler', ico: '🍎🐶', c: '#E5483B' },
+  { key: 'enc', g: 'en', label: 'Renkler', ico: '🎨', c: '#8E7CF0' },
+  { key: 'enn', g: 'en', label: 'Sayılar', ico: '1 2 3', c: '#3FA9F5' },
+  { key: 'enf', g: 'en', label: 'Dinle ve Bul', ico: '👂', c: '#14B8A6' },
 ];
-const GROUPS = [['num', 'Sayılar'], ['shape', 'Şekiller']];
+const GROUPS = [['num', 'Sayılar'], ['shape', 'Şekiller'], ['en', 'İngilizce']];
 const NUM_TYPES = ['add', 'sub', 'seq', 'blank'];
 // Bahçe: her STARS_PER_FRIEND yıldızda bir yeni arkadaş gelir; ilki baştan açık.
 const FRIENDS = ['🌱', '🌷', '🌼', '🐞', '🌻', '🐝', '🍄', '🦋', '🌳', '🐌', '🐦', '🌸', '🐇', '🍓', '🦔',
@@ -815,6 +819,108 @@ Object.assign(SB, {
       fill() { q.slot.textContent = ''; q.slot.append(gEl(s.D)); q.slot.classList.add('filled'); },
     };
     return q;
+  },
+});
+
+/* ================= İngilizce =================
+   Çocuk okuma bilmiyor: ekranda İngilizce yazı yok. Kelimeyi Samantha (Amerikan) söyler, şıklar emoji ya da renk.
+   Ses parçaları en_<kelime> adıyla tools/make-audio.sh'de üretilir. */
+const EN_WORDS = {
+  family: [['mom', '👩'], ['dad', '👨'], ['baby', '👶'], ['brother', '👦'], ['sister', '👧'], ['grandma', '👵'], ['grandpa', '👴']],
+  animals: [['cat', '🐱'], ['dog', '🐶'], ['bird', '🐦'], ['fish', '🐟'], ['cow', '🐮'], ['horse', '🐴'], ['lion', '🦁'], ['duck', '🦆'], ['frog', '🐸'], ['rabbit', '🐰'], ['bear', '🐻'], ['monkey', '🐵'], ['mouse', '🐭'], ['goat', '🐐']],
+  food: [['apple', '🍎'], ['banana', '🍌'], ['orange', '🍊'], ['pear', '🍐'], ['strawberry', '🍓'], ['bread', '🍞'], ['milk', '🥛'], ['egg', '🥚'], ['cake', '🍰'], ['cheese', '🧀'], ['water', '💧']],
+  home: [['house', '🏠'], ['door', '🚪'], ['bed', '🛏️'], ['chair', '🪑'], ['book', '📕'], ['pencil', '✏️'], ['bag', '🎒'], ['clock', '⏰'], ['key', '🔑']],
+  body: [['eye', '👁️'], ['ear', '👂'], ['nose', '👃'], ['mouth', '👄'], ['hand', '✋'], ['foot', '🦶']],
+  clothes: [['hat', '🎩'], ['shoe', '👟'], ['shirt', '👕'], ['socks', '🧦'], ['dress', '👗'], ['coat', '🧥'], ['glasses', '👓']],
+  toys: [['ball', '⚽'], ['car', '🚗'], ['bus', '🚌'], ['plane', '✈️'], ['train', '🚂'], ['bike', '🚲'], ['boat', '⛵'], ['kite', '🪁'], ['teddy bear', '🧸']],
+  nature: [['tree', '🌳'], ['flower', '🌸'], ['sun', '☀️'], ['moon', '🌙'], ['star', '⭐'], ['rain', '🌧️'], ['snow', '❄️'], ['cloud', '☁️']],
+};
+const EN_EASY = ['family', 'animals', 'food', 'toys'];   // Kolay: ilk öğrenilen kelimeler
+// Zor: sesi birbirine benzeyen çiftler
+const EN_NEAR = [['cat', 'hat'], ['car', 'star'], ['boat', 'goat', 'coat'], ['mouse', 'house'], ['bear', 'pear', 'chair'], ['bed', 'bread'], ['clock', 'socks'], ['ball', 'doll'], ['cake', 'kite'], ['moon', 'mom'], ['hand', 'sand'], ['tree', 'three']].map(g => g.filter(w => Object.values(EN_WORDS).flat().some(x => x[0] === w)));
+const EN_ALL = Object.entries(EN_WORDS).flatMap(([cat, ws]) => ws.map(([w, e]) => ({ w, e, cat })));
+const enWord = w => EN_ALL.find(x => x.w === w);
+const enClip = w => 'en_' + w.replace(/ /g, '_');
+const EN_COLORS = { red: '#E5483B', blue: '#3FA9F5', yellow: '#FFC93C', green: '#34C17B', orange: '#FF9F43', purple: '#8E7CF0', pink: '#FF7AB6', black: '#2B3550', white: '#FFFFFF', brown: '#9A5B2E' };
+const EN_COL_EASY = ['red', 'blue', 'yellow', 'green'];
+const EN_SHAPES = ['circle', 'square', 'triangle', 'star', 'heart'];
+const EN_COL_SHAPE = ['red', 'blue', 'yellow', 'green', 'orange', 'purple'];   // şekil renkleri (COLORS ile aynı adlar)
+const EN_NUM = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
+const EN_TENS = { 30: 'thirty', 40: 'forty', 50: 'fifty', 60: 'sixty', 70: 'seventy', 80: 'eighty', 90: 'ninety', 100: 'one hundred' };
+const enNumWord = n => n <= 20 ? EN_NUM[n] : EN_TENS[n];
+// "Find three cats": sayılabilen, emojisi net nesneler (çoğul hâliyle)
+const EN_FIND = [['cat', 'cats'], ['dog', 'dogs'], ['bird', 'birds'], ['fish', 'fish'], ['apple', 'apples'], ['banana', 'bananas'], ['car', 'cars'], ['ball', 'balls'], ['star', 'stars'], ['flower', 'flowers']];
+const enFindClip = (n, w) => `enf_${n}_${w}`;
+const enGroup = (e, n) => { const s = el('span', 'en-grp n' + n); for (let i = 0; i < n; i++) s.append(el('span', 'en-emo', e)); return s; };
+const enEmo = e => el('span', 'en-emo big', e);
+const enBlob = c => { const s = el('span', 'en-blob'); s.style.setProperty('--b', EN_COLORS[c]); return s; };
+
+Object.assign(GEN, {
+  enw(lv) {
+    let pool;
+    if (lv === 1) pool = sample(EN_EASY.map(c => pick(EN_WORDS[c])), 3).map(([w]) => w);   // farklı kategoriler
+    else if (lv === 3 && Math.random() < .6) {
+      const g = pick(EN_NEAR.filter(g => g.length >= 2)), cat = enWord(g[0]).cat;
+      pool = [...g, ...sample(EN_ALL.filter(x => !g.includes(x.w) && x.cat === cat), 4 - g.length).map(x => x.w)];
+      pool = pool.slice(0, 4);
+      if (pool.length < 4) pool.push(...sample(EN_ALL.filter(x => !pool.includes(x.w)), 4 - pool.length).map(x => x.w));
+    } else { const cat = pick(Object.keys(EN_WORDS).filter(c => EN_WORDS[c].length >= 4)); pool = sample(EN_WORDS[cat], 4).map(([w]) => w); }
+    return { t: 'enw', w: pool[0], opts: pool };
+  },
+  enc(lv) {
+    if (lv < 3) { const cs = sample(lv === 1 ? EN_COL_EASY : Object.keys(EN_COLORS), lv === 1 ? 3 : 4); return { t: 'enc', c: cs[0], opts: cs }; }
+    // Zor: renk + şekil ("red heart"); çeldiriciler aynı renk başka şekil, aynı şekil başka renk
+    const c = pick(EN_COL_SHAPE), s = pick(EN_SHAPES);
+    const alts = shuffle([[c, pick(EN_SHAPES.filter(x => x !== s))], [pick(EN_COL_SHAPE.filter(x => x !== c)), s]]);
+    const third = [pick(EN_COL_SHAPE.filter(x => x !== c)), pick(EN_SHAPES.filter(x => x !== s))];
+    const opts = [[c, s], ...alts, third].filter((v, i, a) => a.findIndex(y => y.join() === v.join()) === i);
+    while (opts.length < 4) { const v = [pick(EN_COL_SHAPE), pick(EN_SHAPES)]; if (!opts.some(y => y.join() === v.join())) opts.push(v); }
+    return { t: 'enc', c, s, opts };
+  },
+  enn(lv) {
+    if (lv === 1) { const ns = sample([1, 2, 3, 4, 5], 3); return { t: 'enn', n: ns[0], opts: ns, e: pick(['🍎', '⭐', '🐱', '⚽', '🌸']) }; }
+    if (lv === 2) { const n = rnd(1, 20), set = new Set([n]); for (const d of shuffle([1, -1, 2, -2, 10, -10])) if (set.size < 4 && n + d >= 1 && n + d <= 20) set.add(n + d); return { t: 'enn', n, opts: [...set] }; }
+    // Zor: thirteen / thirty karışıklığı
+    const teen = rnd(3, 9), pairs = [10 + teen, teen * 10, teen, teen * 10 > 20 ? 10 + teen + 1 : teen + 1];
+    const n = pick([10 + teen, teen * 10].filter(v => v <= 20 || EN_TENS[v]));
+    const set = new Set([n]); for (const v of shuffle(pairs)) if (set.size < 4 && (v <= 20 || EN_TENS[v])) set.add(v);
+    for (let k = 1; set.size < 4; k++) if (n + k <= 20 || EN_TENS[n + k]) set.add(n + k);
+    return { t: 'enn', n, opts: [...set] };
+  },
+  enf(lv) {
+    const max = lv === 1 ? 3 : lv === 2 ? 4 : 5;
+    const [w] = pick(EN_FIND), n = rnd(1, max), other = pick(EN_FIND.filter(x => x[0] !== w))[0];
+    const opts = [[w, n]], add = o => { if (!opts.some(x => x[0] === o[0] && x[1] === o[1]) && o[1] >= 1 && o[1] <= max) opts.push(o); };
+    for (const d of shuffle([1, -1, 2, -2])) if (opts.length < (lv === 1 ? 3 : 2)) add([w, n + d]);
+    if (lv > 1) { add([other, n]); for (const d of shuffle([1, -1, 2])) if (opts.length < 4) add([w, n + d]); }
+    for (let k = 1; opts.length < (lv === 1 ? 3 : 4); k++) add([w, ((n + k - 1) % max) + 1]);
+    return { t: 'enf', w, n, opts };
+  },
+});
+
+const enAsk = (s, ans, opts, say, draw) => ({
+  shape: true, ans, say, hintSay: ['en_talimat', 0, ...say],
+  prompt: 'Dinle ve doğru resmi bul', hintText: 'Bir kez daha dinle',
+  opts,
+  draw(qe) {
+    const b = el('button', 'hear-btn', '🔊'); b.setAttribute('aria-label', 'Dinle');
+    b.onclick = () => $('speakBtn').onclick();
+    qe.append(b); if (draw) draw(qe);
+  },
+  fill() {},
+});
+Object.assign(SB, {
+  enw(s) { return enAsk(s, s.w, s.opts.map(w => [w, () => enEmo(enWord(w).e), w]), [enClip(s.w)]); },
+  enc(s) {
+    if (!s.s) return enAsk(s, s.c, s.opts.map(c => [c, () => enBlob(c), c]), ['enc_' + s.c]);
+    return enAsk(s, s.c + '-' + s.s, s.opts.map(([c, sh]) => [c + '-' + sh, () => shapeEl([sh, c]), c + ' ' + sh]), [`encs_${s.c}_${s.s}`]);
+  },
+  enn(s) {
+    const show = n => s.e ? enGroup(s.e, n) : el('span', 'en-num' + (n >= 100 ? ' long' : ''), String(n));
+    return enAsk(s, String(s.n), s.opts.map(n => [String(n), () => show(n), String(n)]), ['enn_' + s.n]);
+  },
+  enf(s) {
+    return enAsk(s, s.w + '-' + s.n, s.opts.map(([w, n]) => [w + '-' + n, () => enGroup(enWord(w).e, n), n + ' ' + w]), [enFindClip(s.n, s.w)]);
   },
 });
 
