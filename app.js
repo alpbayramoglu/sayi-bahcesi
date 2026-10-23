@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 30;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v30)
+const VERSION = 31;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v31)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -844,8 +844,7 @@ const EN_NEAR = [['cat', 'hat'], ['car', 'star'], ['boat', 'goat', 'coat'], ['mo
 const EN_ALL = Object.entries(EN_WORDS).flatMap(([cat, ws]) => ws.map(([w, e]) => ({ w, e, cat })));
 const enWord = w => EN_ALL.find(x => x.w === w);
 const enClip = w => 'en_' + w.replace(/ /g, '_');
-const EN_COLORS = { red: '#E5483B', blue: '#3FA9F5', yellow: '#FFC93C', green: '#34C17B', orange: '#FF9F43', purple: '#8E7CF0', pink: '#FF7AB6', black: '#2B3550', white: '#FFFFFF', brown: '#9A5B2E' };
-const EN_COL_EASY = ['red', 'blue', 'yellow', 'green'];
+const EN_COLORS = { red: '#E5483B', blue: '#3FA9F5', yellow: '#FFC93C', green: '#34C17B', orange: '#FF9F43', purple: '#8E7CF0', pink: '#FF7AB6', black: '#2B3550', white: '#FFFFFF', brown: '#9A5B2E', gray: '#9AA3AF' };
 const EN_SHAPES = ['circle', 'square', 'triangle', 'star', 'heart'];
 const EN_COL_SHAPE = ['red', 'blue', 'yellow', 'green', 'orange', 'purple'];   // şekil renkleri (COLORS ile aynı adlar)
 const EN_NUM = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
@@ -873,7 +872,7 @@ Object.assign(GEN, {
   enc(lv) {
     // Orta: yarısı şekil adı (circle, star…); şıkların hepsi aynı renkte ki yalnız şekle bakılsın
     if (lv === 2 && Math.random() < .5) { const sh = sample(EN_SHAPES, 4); return { t: 'enc', sh: sh[0], col: pick(EN_COL_SHAPE), opts: sh }; }
-    if (lv < 3) { const cs = sample(lv === 1 ? EN_COL_EASY : Object.keys(EN_COLORS), lv === 1 ? 3 : 4); return { t: 'enc', c: cs[0], opts: cs }; }
+    if (lv < 3) { const cs = sample(Object.keys(EN_COLORS), 4); return { t: 'enc', c: cs[0], opts: cs }; }   // 11 renkten 4 şık
     // Zor: renk + şekil ("red heart"); çeldiriciler aynı renk başka şekil, aynı şekil başka renk
     const c = pick(EN_COL_SHAPE), s = pick(EN_SHAPES);
     const alts = shuffle([[c, pick(EN_SHAPES.filter(x => x !== s))], [pick(EN_COL_SHAPE.filter(x => x !== c)), s]]);

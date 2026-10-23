@@ -124,6 +124,7 @@ EN_CLIPS=(
   "enc_black|black"
   "enc_white|white"
   "enc_brown|brown"
+  "enc_gray|gray"
   "encs_red_circle|a red circle"
   "encs_red_square|a red square"
   "encs_red_triangle|a red triangle"
