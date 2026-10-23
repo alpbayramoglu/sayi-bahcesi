@@ -660,3 +660,7 @@ body.tabbed .ver { bottom: calc(82px + max(10px, env(safe-area-inset-bottom))); 
 .question.shapes:is(.enw, .enc, .enn, .enf) { min-height: 0; }
 .answer .en-blob { width: auto; height: 72%; }
 @media (orientation: portrait) { .prac b { font-size: clamp(16px, 4.6vw, 23px); } }
+
+#catGrid.many { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (orientation: landscape) { #catGrid.many { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; } #catGrid.many .mode { padding: 6px 4px; } }
+.levels.no-range small { display: none; }

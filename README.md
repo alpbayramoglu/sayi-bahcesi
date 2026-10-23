@@ -19,13 +19,13 @@ Altta dört sekme var (yatay ekranda solda): **Öğren**, **Oyunlar**, **Bahçem
 - **Oyunlar:** 3 yuvalı bilet göstergesi ve iki oyun kartı (Kartopu Savaşı'nda sıradaki bölüm yazar). Bilet yoksa "Tur oyna" düğmesi çıkar. Sekme düğmesinde bilet sayısı görünür.
 - Sekme çubuğu alıştırma, tur, sonuç, görevler ve ebeveyn ekranlarında gizlenir.
 
-## İngilizce (v27)
+## English (v27, sekmeler v32)
 
-Ana sayfada üçüncü alıştırma kartı. Çocuk okuma bilmediği için ekranda İngilizce yazı yok: kelimeyi Samantha (Amerikan aksanı, `tools/make-audio.sh` içinde `EN_CLIPS`) söyler, şıklar emoji, renk lekesi ya da rakam. Soru 🔊 düğmesiyle dinlenir; hoparlör kelimeyi bir kez söyler. Kolay 3 şık (Renkler 4), Orta ve Zor 4 şık. Övgüler ve tur sonu sesi İngilizce (Great job!, Perfect!…).
-- **Kelimeler:** ~80 kelime (aile, hayvan, yiyecek, ev/okul, vücut, giysi, oyuncak/taşıt, doğa). Kolay farklı kategorilerden, Orta aynı kategoriden, Zor sesi benzeyen çiftler (cat/hat, boat/goat/coat, mouse/house…).
-- **Renkler:** Kolay 11 renkten 4 şık (gri dahil), Orta aynı renkler ya da şekil adı (circle, square, triangle, star, heart; şıklar aynı renkte), Zor renk + şekil ("a red heart").
-- **Sayılar:** şıklar rakam. Kolay 1–10, Orta 1–20, Zor "thirteen / thirty" karışıklığı.
-- **Dinle ve Bul:** "Find three cats." Kolay 1–3, Orta 1–4 ve başka nesne, Zor 1–5.
+Ana sayfada üçüncü alıştırma kartı "English". Çocuk okuma bilmediği için soruda İngilizce yazı yok: kelimeyi Samantha (Amerikan aksanı, `tools/make-audio.sh` içinde `EN_CLIPS`) söyler, şıklar emoji, renk lekesi ya da rakam. Sekme başlıkları İngilizce. Hoparlör kelimeyi bir kez söyler; övgüler ve tur sonu sesi İngilizce (Great job!, Perfect!…).
+- **Kelime sekmeleri (`EN_CATS`, mod anahtarı `en_<kategori>`):** Family, Animals, Food, Toys, Home, Body, Clothes, Plants, Weather. Kolay 3 şık, Orta 4, Zor 4 ve sesi benzeyen kelime (cat/hat, boat/goat/coat, mouse/house…) varsa şıklara girer.
+- **Colors:** Kolay 11 renkten 4 şık (gri dahil), Orta aynı renkler ya da şekil adı (circle, square, triangle, star, heart; şıklar aynı renkte), Zor renk + şekil ("a red heart").
+- **Numbers:** şıklar rakam. Kolay 1–10, Orta 1–20, Zor "thirteen / thirty" karışıklığı.
+- Zorluk düğmelerindeki 0–5 / 0–10 / 0–20 aralıkları yalnız Sayılar'da görünür.
 
 ## Yeni şekil soruları (v26)
 
