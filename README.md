@@ -19,6 +19,17 @@ Altta dört sekme var (yatay ekranda solda): **Öğren**, **Oyunlar**, **Bahçem
 - **Oyunlar:** 3 yuvalı bilet göstergesi ve iki oyun kartı (Kartopu Savaşı'nda sıradaki bölüm yazar). Bilet yoksa "Tur oyna" düğmesi çıkar. Sekme düğmesinde bilet sayısı görünür.
 - Sekme çubuğu alıştırma, tur, sonuç, görevler ve ebeveyn ekranlarında gizlenir.
 
+## Yeni şekil soruları (v26)
+
+Şekiller grubuna 5 mod eklendi; hepsi her seviyede 4 şıklı, şıklar resim. Soru verisi JSON, doğru cevap veriden hesaplanır, şıkların anahtarları birbirinden farklı olmak zorunda.
+- **Matris:** 3×3 tablo. Kolay satır boyunca tek kural (adet, renk ya da dönüş); Orta şekil satıra, renk kayarak, üstüne adet/dönüş; Zor şekil ve renk iki yönde kayar, adet ya da dönüş eklenir.
+- **Parça Bütün:** Desenden kesilmiş kare. Kolay tekrar eden desen; Orta ve Zor dört yönlü simetrik desen (delik bir çeyrekte, eşi görünür). Çeldiriciler parçanın aynası, dönmüşü, bir karesi bozuk hâli.
+- **Gölge ve Bakış:** Kolay renkli şeklin gölgesi; Orta küp yığınına önden/üstten, Zor önden/sağdan/üstten bakış. Göz işareti bakış yönünü, sarı yüzler önü/sağı gösterir.
+- **Yansıma:** Parçalardan bir şekil, dikey (Kolay) ya da yatay ayna. Çeldiriciler kopya, öteki eksene ayna, 180° dönüş.
+- **İlişki:** A → B ise C → ?. Kural sayısı seviye kadar (dolu/boş, boyut, dönüş, adet, renk).
+
+Ebeveyn paneli üç sekme: Görevler, Bilet ve Altın (doğrudan ekle/çıkar, sınıra takılmaz), Ayarlar.
+
 ## Oyun, dükkân ve görevler
 
 - **Kartopu Savaşı** (`savas/`): War of Blocks bu uygulamanın içinde. Her maç bir 🎟️ bilet harcar.

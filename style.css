@@ -608,3 +608,40 @@ body.tabbed .ver { bottom: calc(82px + max(10px, env(safe-area-inset-bottom))); 
 .shop-tabs { display: flex; gap: 8px; padding: 0 2px 10px; }
 .shop-tab { flex: 1; padding: 10px 8px; border-radius: 16px; background: rgba(255, 255, 255, .55); color: #4B5A72; font-size: 17px; box-shadow: 0 4px 0 rgba(30, 34, 51, .12); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .shop-tab.on { background: #fff; color: var(--ink); box-shadow: 0 4px 0 var(--gold, #F5A524), inset 0 0 0 3px var(--gold, #F5A524); }
+
+/* Ebeveyn paneli sekmeleri ve bilet/altın sayaçları */
+.p-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.p-tab { flex: 1; min-width: 0; padding: 10px 8px; border-radius: 16px; background: rgba(255, 255, 255, .6); color: #4B5A72; font-size: 16px; white-space: nowrap; box-shadow: 0 3px 0 rgba(30, 34, 51, .12); }
+.p-tab.on { background: #fff; color: var(--ink); box-shadow: 0 3px 0 var(--blue), inset 0 0 0 3px var(--blue); }
+.p-wallet { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.p-wico { font-size: 30px; }
+.p-wval { font-size: 32px; min-width: 64px; }
+.chip-btn.plus { background: #E1F6EA; color: #0F6236; }
+
+/* Yeni şekil soruları: Matris, Parça Bütün, Gölge ve Bakış, Yansıma, İlişki */
+.mx { --cs: clamp(40px, min(13vh, 17vw), 92px); display: grid; grid-template-columns: repeat(3, var(--cs)); gap: 6px; background: #fff; padding: 8px; border-radius: 20px; box-shadow: var(--lift); }
+.mxc { width: var(--cs); height: var(--cs); padding: 8%; border-radius: 16%; background: #F3F6FA; display: grid; place-items: center; font-size: calc(var(--cs) * .55); color: var(--c); }
+.mxc.slot { background: #FFFDF6; box-shadow: inset 0 0 0 3px var(--c); }
+.mxc.filled { background: #E1F6EA; box-shadow: none; animation: pop .45s; }
+.partq, .viewq { background: #fff; padding: 10px; border-radius: 20px; box-shadow: var(--lift); }
+.partq .shp, .viewq .shp.big { width: clamp(150px, min(42vh, 60vw), 300px); height: clamp(150px, min(42vh, 60vw), 300px); filter: none; }
+.viewq .shp.cubes { width: clamp(170px, min(46vh, 66vw), 330px); }
+.reflq { --rb: clamp(96px, min(30vh, 34vw), 190px); display: flex; align-items: center; gap: 10px; }
+.reflq.h { flex-direction: column; --rb: clamp(80px, 21vh, 150px); gap: 6px; }
+.reflq .rbox { width: var(--rb); height: var(--rb); display: grid; place-items: center; font-size: calc(var(--rb) * .45); color: var(--c); border-radius: 18px; }
+.reflq .rbox .shp { width: 100%; height: 100%; filter: none; }
+.reflq .rbox.unknown { background: #FFFDF6; box-shadow: inset 0 0 0 3px var(--c); }
+.reflq .rbox.filled { box-shadow: none; animation: pop .45s; }
+.reflq .rmirror { align-self: stretch; width: 12px; border-radius: 6px; background: linear-gradient(90deg, #9FD8FF, #E8F7FF 45%, #7FC6F5); box-shadow: 0 0 0 2px #5BA9DD; }
+.reflq.h .rmirror { width: auto; height: 12px; align-self: stretch; background: linear-gradient(#9FD8FF, #E8F7FF 45%, #7FC6F5); }
+.analq { --ac: clamp(54px, min(16vh, 15vw), 110px); display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.analq .apair { display: flex; align-items: center; gap: 6px; background: #fff; padding: 8px; border-radius: 20px; box-shadow: var(--lift); }
+.analq .acell { width: var(--ac); height: var(--ac); padding: 6%; border-radius: 16px; background: #F3F6FA; display: grid; place-items: center; font-size: calc(var(--ac) * .55); color: var(--c); }
+.analq .acell.slot { background: #FFFDF6; box-shadow: inset 0 0 0 3px var(--c); }
+.analq .acell.filled { background: #E1F6EA; box-shadow: none; animation: pop .45s; }
+.analq .aarrow { font-size: calc(var(--ac) * .45); color: var(--c); }
+.analq .asep { font-size: 22px; color: #4B5A72; }
+.answer svg.shp { filter: none; }
+/* Yeni şekil sorularında şıklar resim: kutu daha uzun, çizim kutuyu doldursun */
+.answers:is(.t-mat, .t-part, .t-view, .t-refl, .t-anal) .answer { height: clamp(78px, 24vh, 140px); padding: 6px; }
+.answers:is(.t-mat, .t-part, .t-view, .t-refl, .t-anal) .answer .shp { height: 92%; width: auto; max-width: 100%; }

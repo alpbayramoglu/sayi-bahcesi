@@ -20,6 +20,11 @@ CLIPS=(
   "bosluga|Boşluğa hangisi gelir?" "ayna|Aynadaki hâli hangisi?" "farkli|Hangisi farklı?"
   "tekrar|Tekrar eden parçaya bak." "ayna_cizgi|Ortadaki çizgi bir ayna." "yan_alt|Yan yana ve alt alta bak."
   "sekline_bak|Şekline bak." "rengine_bak|Rengine bak." "boyuna_bak|Büyüklüğüne bak."
+  "satir_sutun|Satırlara ve sütunlara bak." "desen_bak|Desenin geri kalanına bak." "golge|Gölgesi hangisi?"
+  "dis_cizgi|Parçaların yerine bak." "onden|Önden bakınca nasıl görünür?" "sagdan|Sağdan bakınca nasıl görünür?"
+  "ustten|Üstten bakınca nasıl görünür?" "kule_bak|Her sıradaki en uzun kuleye bak." "ustten_ipucu|Küplerin tepelerine bak."
+  "ayna_yakin|Aynaya yakın olan, yansımada da aynaya yakın olur." "iliski|Birinciye ne olduysa, üçüncüye de o olur. Soru işaretine hangisi gelir?"
+  "ne_degisti|İlk ikisinde ne değişti?"
   # bahçe
   "yeni_arkadas|Bahçene yeni bir arkadaş geldi!"
   "yeni_akvaryum|Akvaryumuna yeni bir arkadaş geldi!" "yeni_orman|Ormanına yeni bir arkadaş geldi!"

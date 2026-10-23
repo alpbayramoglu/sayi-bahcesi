@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 25;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v25)
+const VERSION = 26;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v26)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -31,6 +31,11 @@ const MODES = [
   { key: 'sym', g: 'shape', label: 'Ayna', ico: '🦋', c: '#E05FC4' },
   { key: 'odd', g: 'shape', label: 'Farklı Olan', ico: '🔍', c: '#F08C1A' },
   { key: 'sud', g: 'shape', label: 'Şekil Sudoku', ico: '🧩', c: '#5B7FEF' },
+  { key: 'mat', g: 'shape', label: 'Matris', ico: '▦', c: '#0EA5A4' },
+  { key: 'part', g: 'shape', label: 'Parça Bütün', ico: '◪', c: '#C2410C' },
+  { key: 'view', g: 'shape', label: 'Gölge ve Bakış', ico: '👁️', c: '#475569' },
+  { key: 'refl', g: 'shape', label: 'Yansıma', ico: '🪞', c: '#7C3AED' },
+  { key: 'anal', g: 'shape', label: 'İlişki', ico: 'A→B', c: '#DB2777' },
 ];
 const GROUPS = [['num', 'Sayılar'], ['shape', 'Şekiller']];
 const NUM_TYPES = ['add', 'sub', 'seq', 'blank'];
@@ -468,6 +473,351 @@ const SB = {
   },
 };
 
+/* ================= Yeni şekil soruları =================
+   Matris, Parça–Bütün, Gölge ve Bakış, Yansıma, İlişki. Hepsi her seviyede 4 şıklı.
+   Soru verisi düz JSON (tekrar listesinde saklanır); doğru cevap veriden hesaplanır, şıklar anahtarlarıyla
+   birbirinden farklı olmak zorunda. Çeldiriciler çocukların tipik hatası: bir özelliği atlamak, ters aynalamak, kopyalamak. */
+const ASYM_SVG = {
+  arrow: '<path d="M12 38 H54 V18 L90 50 L54 82 V62 H12 Z"/>',
+  flag: '<path d="M20 8 H31 V92 H20 Z M31 10 H86 L72 30 L86 50 H31 Z"/>',
+  ell: '<path d="M16 10 H42 V62 H86 V90 H16 Z"/>',
+  pac: '<path d="M50 50 L88 31 A42 42 0 1 0 88 69 Z"/>',
+};
+const GLYPH = { ...SHAPE_SVG, ...ASYM_SVG };
+const GLYPH_TR = { ...SHAPE_TR, arrow: 'ok', flag: 'bayrak', ell: 'L', pac: 'ağız' };
+const ROT_SHAPES = ['triangle', 'arrow', 'flag', 'ell', 'pac', 'heart'];
+const ROUND4 = ['circle', 'square', 'diamond'];          // 90° dönünce aynı görünenler
+const INK = '#2B3550';
+const NEW_N = 4;
+
+function svgOf(inner, vb = '0 0 100 100', cls = 'shp') {
+  const s = document.createElementNS(SVGNS, 'svg');
+  s.setAttribute('viewBox', vb); s.setAttribute('class', cls); s.setAttribute('aria-hidden', 'true');
+  s.innerHTML = inner; return s;
+}
+// Bir hücre: { s şekil, c renk, r çeyrek dönüş, f dolu(1)/boş(0), z küçük, n adet }
+function glyphSvg(g) {
+  const n = g.n || 1, col = COLORS[g.c], f = g.f === 0 ? 0 : 1;
+  const pos = { 1: [[50, 50]], 2: [[27, 50], [73, 50]], 3: [[50, 27], [27, 73], [73, 73]], 4: [[27, 27], [73, 27], [27, 73], [73, 73]] }[n];
+  const k = (n === 1 ? .92 : .44) * (g.z ? .58 : 1);
+  return pos.map(([x, y]) => `<g transform="translate(${x} ${y}) scale(${k}) rotate(${(g.r || 0) * 90}) translate(-50 -50)" fill="${f ? col : '#fff'}" stroke="${col}" stroke-width="${f ? 8 : 11}" stroke-linejoin="round">${GLYPH[g.s]}</g>`).join('');
+}
+const gKey = g => [g.s, g.c, ROUND4.includes(g.s) ? 0 : ((g.r || 0) % 4 + 4) % 4, g.f === 0 ? 0 : 1, g.z ? 1 : 0, g.n || 1].join('.');
+const gName = g => `${(g.n || 1) > 1 ? g.n + ' ' : ''}${g.z ? 'küçük ' : ''}${g.f === 0 ? 'içi boş ' : ''}${COLOR_TR[g.c]} ${GLYPH_TR[g.s]}`;
+const gEl = g => svgOf(glyphSvg(g));
+// Doğru cevap + adaylardan, anahtarı farklı ilk 3 çeldirici (yoksa null: üretici yeniden dener)
+function pickAlts(ans, cands, key, n = NEW_N - 1) {
+  const seen = new Set([key(ans)]), out = [];
+  for (const c of cands) { const k = key(c); if (!seen.has(k)) { seen.add(k); out.push(c); if (out.length === n) return out; } }
+  return null;
+}
+
+/* ----- 1. Matris: 3×3 tabloda satır ve sütun kuralı ----- */
+function matCell(lv, kind, r, c, P) {
+  if (lv === 1) {   // satır boyunca tek kural; şekil (ve rengi) satıra ait
+    const g = { s: P.sh[r], c: P.co[r], r: 0, f: 1, z: 0, n: 1 };
+    if (kind === 'count') g.n = c + 1;
+    if (kind === 'color') g.c = P.co[c];
+    if (kind === 'rot') g.r = c;
+    return g;
+  }
+  if (lv === 2) {   // şekil satıra, renk kayarak (her satırda bir adım), üstüne sütunda adet ya da dönüş
+    const g = { s: P.sh[r], c: P.co[(r + c) % 3], r: 0, f: 1, z: 0, n: 1 };
+    if (kind === 'count') g.n = c + 1; else g.r = c;
+    return g;
+  }
+  // Zor: şekil ve renk iki farklı yönde kayar, adet satırdan, dönüş sütundan
+  return { s: P.sh[(r + 2 * c) % 3], c: P.co[(r + c) % 3], r: kind === 'rot' ? c : 0, f: 1, z: 0, n: kind === 'count' ? r + 1 : (kind === 'rot' ? 1 : 1 + ((r + c) % 2)) };
+}
+
+/* ----- 2. Parça–Bütün: desenden kesilmiş kare ----- */
+const blk = (rows, x, y, K) => rows.slice(y, y + K).map(r => r.slice(x, x + K));
+const bMirror = b => b.map(r => [...r].reverse().join(''));
+const bFlip = b => [...b].reverse();
+const bRot = b => b[0].split('').map((_, i) => b.map(r => r[i]).reverse().join(''));
+const bKey = b => b.join('/');
+
+/* ----- 3. Gölge ve bakış ----- */
+const ANCH = { t: [50, 18], tl: [22, 26], tr: [78, 26], l: [16, 62], r: [84, 62], bl: [24, 88], br: [76, 88] };
+const SIL_SHAPES = ['circle', 'square', 'triangle', 'star', 'heart', 'diamond'];
+const MIRROR_A = { t: 't', tl: 'tr', tr: 'tl', l: 'r', r: 'l', bl: 'br', br: 'bl' };
+const silKey = f => [f.base, ...f.parts.map(p => p.a + ':' + p.s).sort()].join('|');
+function figSvg(f, dark) {
+  const one = (s, x, y, k, col) => `<g transform="translate(${x} ${y}) scale(${k}) translate(-50 -50)" fill="${col}" stroke="${col}" stroke-width="8" stroke-linejoin="round">${SHAPE_SVG[s]}</g>`;
+  return f.parts.map(p => one(p.s, ...ANCH[p.a], .34, dark ? INK : COLORS[p.c])).join('') + one(f.base, 50, 58, .62, dark ? INK : COLORS[f.bc]);
+}
+// Küp yığını: h[y][x] yükseklik. Ön = +y yüzü (sol alttaki yüzler), sağ = +x yüzü.
+const viewOf = (h, v) => {
+  const X = h[0].length, Y = h.length;
+  if (v === 'front') return 'p' + Array.from({ length: X }, (_, x) => Math.max(...h.map(r => r[x]))).join('');
+  if (v === 'right') return 'p' + Array.from({ length: Y }, (_, i) => Math.max(...h[Y - 1 - i])).join('');
+  return 't' + h.map(r => r.map(z => z > 0 ? 1 : 0).join('')).join('/');
+};
+function cubesSvg(h, view) {
+  const a = 17, b = 10, c = 20, P = (x, y, z) => [(x - y) * a, (x + y) * b - z * c], pts = (...p) => p.map(q => q.map(v => v.toFixed(1)).join(',')).join(' ');
+  const X = h[0].length, Y = h.length, list = [];
+  for (let y = 0; y < Y; y++) for (let x = 0; x < X; x++) for (let z = 0; z < h[y][x]; z++) list.push([x, y, z]);
+  list.sort((p, q) => (p[0] + p[1]) - (q[0] + q[1]) || p[2] - q[2]);
+  let out = '';
+  for (const [x, y, z] of list) {
+    out += `<polygon points="${pts(P(x, y, z + 1), P(x + 1, y, z + 1), P(x + 1, y + 1, z + 1), P(x, y + 1, z + 1))}" fill="#BFE6FF"/>`;
+    out += `<polygon points="${pts(P(x, y + 1, z + 1), P(x + 1, y + 1, z + 1), P(x + 1, y + 1, z), P(x, y + 1, z))}" fill="${view === 'front' ? '#FFC93C' : '#3FA9F5'}"/>`;
+    out += `<polygon points="${pts(P(x + 1, y, z + 1), P(x + 1, y + 1, z + 1), P(x + 1, y + 1, z), P(x + 1, y, z))}" fill="${view === 'right' ? '#FFC93C' : '#2477C2'}"/>`;
+  }
+  const all = list.flatMap(([x, y, z]) => [P(x, y, z + 1), P(x + 1, y + 1, z), P(x, y + 1, z), P(x + 1, y, z)]);
+  const minX = Math.min(...all.map(p => p[0])), maxX = Math.max(...all.map(p => p[0])), minY = Math.min(...all.map(p => p[1])), maxY = Math.max(...all.map(p => p[1]));
+  // Göz: hangi yönden bakıldığını gösterir
+  const eye = (ex, ey, rot) => `<g transform="translate(${ex} ${ey}) rotate(${rot})"><path d="M-15 0 Q0 -12 15 0 Q0 12 -15 0 Z" fill="#fff" stroke="${INK}" stroke-width="3"/><circle r="5" fill="${INK}"/><path d="M20 0 H34 M28 -6 L34 0 L28 6" stroke="#E5483B" stroke-width="4" fill="none" stroke-linecap="round"/></g>`;
+  const cx = (minX + maxX) / 2;
+  const e = view === 'front' ? eye(minX - 6, maxY + 6, -30) : view === 'right' ? eye(maxX + 6, maxY + 6, 210) : eye(cx, minY - 30, 90);
+  return { inner: `<g stroke="${INK}" stroke-width="2" stroke-linejoin="round">${out}</g>${e}`, vb: `${minX - 34} ${minY - (view === 'top' ? 52 : 10)} ${maxX - minX + 68} ${maxY - minY + (view === 'top' ? 62 : 36)}` };
+}
+function viewSvg(code) {
+  const s = 20; let out = '', w, hgt;
+  if (code[0] === 'p') {
+    const cols = code.slice(1).split('').map(Number), H = 4;
+    w = cols.length * s; hgt = H * s;
+    cols.forEach((n, x) => { for (let z = 0; z < n; z++) out += `<rect x="${x * s + 1}" y="${hgt - (z + 1) * s + 1}" width="${s - 2}" height="${s - 2}" rx="3" fill="#3FA9F5" stroke="${INK}" stroke-width="2"/>`; });
+    out += `<path d="M-4 ${hgt + 1} H${w + 4}" stroke="${INK}" stroke-width="3"/>`;
+  } else {
+    const rows = code.slice(1).split('/');
+    w = rows[0].length * s; hgt = rows.length * s;
+    rows.forEach((r, y) => [...r].forEach((v, x) => { out += `<rect x="${x * s + 1}" y="${y * s + 1}" width="${s - 2}" height="${s - 2}" rx="3" fill="${v === '1' ? '#BFE6FF' : 'none'}" stroke="${v === '1' ? INK : '#D5DCE8'}" stroke-width="2"/>`; }));
+  }
+  return svgOf(out, `-8 -8 ${Math.max(w, hgt) + 16} ${Math.max(w, hgt) + 16}`);
+}
+
+/* ----- 4. Yansıma: parçalardan bir şekil, dikey ya da yatay ayna ----- */
+const REFL_SHAPES = ['circle', 'square', 'triangle', 'star', 'heart', 'diamond', 'arrow'];
+function reflT(parts, t) {   // t: v dikey ayna, h yatay ayna, r 180° dönüş, c kopya
+  return parts.map(p => {
+    const q = { ...p };
+    if (t === 'v' || t === 'r') { q.x = 100 - p.x; q.d = 1 - p.d; }
+    if (t === 'h' || t === 'r') { q.y = 100 - p.y; q.fl = 1 - p.fl; }
+    return q;
+  });
+}
+const reflKey = parts => parts.map(p => [p.s, p.c, p.x, p.y, p.s === 'arrow' ? 'd' + p.d : '', ['triangle', 'star', 'heart'].includes(p.s) ? 'f' + p.fl : ''].join(':')).sort().join('|');
+function partsSvg(parts) {
+  return parts.map(p => {
+    const sx = p.s === 'arrow' && p.d ? -1 : 1, sy = p.s !== 'arrow' && p.fl ? -1 : 1;
+    return `<g transform="translate(${p.x} ${p.y}) scale(${.27 * sx} ${.27 * sy}) translate(-50 -50)" fill="${COLORS[p.c]}" stroke="${COLORS[p.c]}" stroke-width="9" stroke-linejoin="round">${GLYPH[p.s]}</g>`;
+  }).join('');
+}
+
+/* ----- 5. İlişki: A → B ise C → ? ----- */
+const ANAL_RULES = ['fill', 'size', 'rot', 'count', 'color'];
+function analApply(g, rules, P, skip = null) {
+  const o = { ...g };
+  for (const r of rules) {
+    if (r === skip) continue;
+    if (r === 'fill') o.f = g.f === 0 ? 1 : 0;
+    if (r === 'size') o.z = g.z ? 0 : 1;
+    if (r === 'rot') o.r = (g.r + P.dr + 4) % 4;
+    if (r === 'count') o.n = g.n + P.dn;
+    if (r === 'color') o.c = P.to;
+  }
+  return o;
+}
+
+Object.assign(GEN, {
+  mat(lv) {
+    for (;;) {
+      const kind = pick(lv === 1 ? ['count', 'color', 'rot'] : lv === 2 ? ['count', 'rot'] : ['count', 'rot', 'mix']);
+      const P = { sh: sample(kind === 'rot' || lv === 3 ? ROT_SHAPES : SHAPES, 3), co: sample(COLS, 3) };
+      const cells = [];
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) cells.push(matCell(lv, kind, r, c, P));
+      const hole = lv === 1 ? rnd(0, 2) * 3 + 2 : rnd(0, 8);
+      const ans = cells[hole];
+      // Çeldirici: tek özelliği yanlış (renk, şekil, adet, dönüş) ve tablodaki komşu hücre
+      const cands = shuffle([
+        ...P.co.map(c => ({ ...ans, c })), ...P.sh.map(s => ({ ...ans, s })),
+        ...[1, 2, 3].map(n => ({ ...ans, n })), ...[1, 2, 3].map(d => ({ ...ans, r: (ans.r + d) % 4 })),
+      ]);
+      const near = cells.filter((_, i) => i !== hole && (Math.floor(i / 3) === Math.floor(hole / 3) || i % 3 === hole % 3));
+      const alts = pickAlts(ans, [pick(near), ...cands], gKey);
+      if (alts) return { t: 'mat', cells, hole, alts };
+    }
+  },
+  part(lv) {
+    const N = lv === 3 ? 8 : 6, K = lv === 3 ? 3 : 2;
+    for (;;) {
+      let rows;
+      if (lv === 1) {   // tekrar eden desen: şerit, dama, çapraz, iç içe kare
+        const p = pick(['stripe', 'check', 'diag', 'ring']);
+        const f = { stripe: (x, y) => x % 3, check: (x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 ? 1 : (x + y) % 2 ? 0 : 2, diag: (x, y) => (x + y) % 3, ring: (x, y) => Math.min(x, y, N - 1 - x, N - 1 - y) % 3 }[p];
+        rows = Array.from({ length: N }, (_, y) => Array.from({ length: N }, (_, x) => f(x, y)).join(''));
+      } else {          // dört yönlü simetrik desen: sol üst çeyrek rastgele, gerisi aynalarla
+        const h = N / 2, nc = lv === 3 ? 3 : 2;
+        const q = Array.from({ length: h }, () => Array.from({ length: h }, () => rnd(0, nc)));
+        rows = Array.from({ length: N }, (_, y) => Array.from({ length: N }, (_, x) => q[y < h ? y : N - 1 - y][x < h ? x : N - 1 - x]).join(''));
+      }
+      // Delik bir çeyreğin içinde kalsın ki simetrik eşi görünsün
+      const okPos = lv === 1 ? [...Array(N - K + 1).keys()] : [...Array(N / 2 - K + 1).keys()].flatMap(v => [v, v + N / 2]);
+      const hx = pick(okPos), hy = pick(okPos);
+      const b = blk(rows, hx, hy, K);
+      if (new Set(b.join('')).size < 2) continue;
+      const one = () => { const c = b.map(r => r.split('')); const i = rnd(0, K - 1), j = rnd(0, K - 1); c[i][j] = String((+c[i][j] + rnd(1, 2)) % (lv === 1 ? 3 : lv === 3 ? 4 : 3)); return c.map(r => r.join('')); };
+      const alts = pickAlts(b, [...shuffle([bMirror(b), bFlip(b), bRot(b), bRot(bRot(b))]), one(), one(), one()], bKey);
+      if (alts) return { t: 'part', N, K, rows, hx, hy, pal: sample(COLS, 3), white: lv > 1, alts };
+    }
+  },
+  view(lv) {
+    if (lv === 1) {   // renkli şeklin gölgesi
+      for (;;) {
+        const base = pick(['square', 'circle', 'triangle', 'heart']), as = sample(Object.keys(ANCH), 3);
+        const f = { base, bc: pick(COLS), parts: as.map(a => ({ a, s: pick(SIL_SHAPES), c: pick(COLS) })) };
+        if (silKey(f) === silKey({ ...f, parts: f.parts.map(p => ({ ...p, a: MIRROR_A[p.a] })) })) continue;   // aynası kendisiyle aynı olmasın
+        const free = Object.keys(ANCH).filter(a => !as.includes(a));
+        const cands = [
+          { ...f, parts: f.parts.map(p => ({ ...p, a: MIRROR_A[p.a] })) },
+          ...f.parts.map((_, i) => ({ ...f, parts: f.parts.map((p, j) => j === i ? { ...p, s: pick(SIL_SHAPES.filter(x => x !== p.s)) } : p) })),
+          ...f.parts.map((_, i) => ({ ...f, parts: f.parts.map((p, j) => j === i ? { ...p, a: pick(free) } : p) })),
+          { ...f, base: pick(['square', 'circle', 'triangle', 'heart'].filter(x => x !== base)) },
+        ];
+        const alts = pickAlts(f, [cands[0], ...shuffle(cands.slice(1))], silKey);
+        if (alts) return { t: 'view', mode: 'sil', f, alts };
+      }
+    }
+    for (;;) {   // küp yığını: önden / üstten / sağdan
+      const X = 3, Y = lv === 2 ? 2 : 3, maxH = lv === 2 ? 2 : 3;
+      const h = Array.from({ length: Y }, () => Array.from({ length: X }, () => Math.random() < .25 ? 0 : rnd(1, maxH)));
+      const n = h.flat().reduce((a, v) => a + v, 0);
+      if (n < 4 || h.flat().filter(v => v === 0).length > 3) continue;
+      const v = pick(lv === 2 ? ['front', 'top'] : ['front', 'right', 'top']);
+      const ans = viewOf(h, v);
+      const flipP = s => s[0] + s.slice(1).split('').reverse().join('');
+      const bump = s => { const a = s.slice(1).split('').map(Number), i = rnd(0, a.length - 1); a[i] = a[i] >= maxH ? a[i] - 1 : a[i] + 1; return 'p' + a.join(''); };
+      const tog = s => { const r = s.slice(1).split('/').map(x => x.split('')), i = rnd(0, r.length - 1), j = rnd(0, r[0].length - 1); r[i][j] = r[i][j] === '1' ? '0' : '1'; return 't' + r.map(x => x.join('')).join('/'); };
+      const tMirror = s => 't' + s.slice(1).split('/').map(r => [...r].reverse().join('')).join('/');
+      const tFlip = s => 't' + s.slice(1).split('/').reverse().join('/');
+      const others = ['front', 'right', 'top'].filter(x => x !== v).map(x => viewOf(h, x));
+      const cands = ans[0] === 'p' ? [flipP(ans), ...shuffle([...others, bump(ans), bump(ans)])] : [tMirror(ans), tFlip(ans), ...shuffle([...others, tog(ans), tog(ans)])];
+      const alts = pickAlts(ans, cands, x => x);
+      if (alts && alts.every(a => a !== 'p' && !/^p0+$/.test(a))) return { t: 'view', mode: v, h, alts };
+    }
+  },
+  refl(lv) {
+    for (;;) {
+      const axis = lv === 1 ? 'v' : pick(['v', 'h']), k = lv === 1 ? 3 : lv === 2 ? 4 : 5;
+      const spots = sample([20, 50, 80].flatMap(x => [20, 50, 80].map(y => [x, y])), k);
+      const parts = spots.map(([x, y]) => ({ s: pick(lv === 1 ? ['triangle', 'arrow', 'heart', 'circle', 'square'] : REFL_SHAPES), c: pick(COLS), x, y, d: rnd(0, 1), fl: 0 }));
+      if (lv === 1) parts.forEach(p => { p.c = parts[0].c; });   // Kolay: tek renk, yalnız yer ve yön
+      const ans = reflT(parts, axis);
+      const alts = pickAlts(ans, [reflT(parts, 'c'), reflT(parts, axis === 'v' ? 'h' : 'v'), reflT(parts, 'r')], reflKey);
+      if (alts) return { t: 'refl', axis, parts, alts };
+    }
+  },
+  anal(lv) {
+    for (;;) {
+      const rules = sample(ANAL_RULES, lv), P = { dr: pick([1, -1]), dn: 1, to: null };
+      const sh = sample(rules.includes('rot') ? ROT_SHAPES : [...SHAPES, ...ROT_SHAPES.slice(1)], 2);
+      const c0 = pick(COLS); P.to = pick(COLS.filter(c => c !== c0));
+      const base = () => ({ r: rnd(0, 3), f: 1, z: 0, n: rules.includes('count') ? rnd(1, 2) : 1 });
+      const A = { s: sh[0], c: c0, ...base() }, C = { s: sh[1], c: rules.includes('color') ? c0 : pick(COLS), ...base() };
+      if (rules.includes('fill') && Math.random() < .5) { A.f = 0; C.f = 0; }
+      if (rules.includes('size') && Math.random() < .4) { A.z = 1; C.z = 1; }
+      const B = analApply(A, rules, P), D = analApply(C, rules, P);
+      const cands = [...rules.map(r => analApply(C, rules, P, r)), B, C, analApply(C, rules, { ...P, dr: -P.dr }), analApply(C, [pick(ANAL_RULES.filter(r => !rules.includes(r)))], P)];
+      const alts = pickAlts(D, lv === 1 ? shuffle(cands) : [...shuffle(cands.slice(0, rules.length)), ...shuffle(cands.slice(rules.length))], gKey);
+      if (alts) return { t: 'anal', rules, A, B, C, D, alts };
+    }
+  },
+});
+
+Object.assign(SB, {
+  mat(s) {
+    const ans = s.cells[s.hole];
+    const q = {
+      shape: true, ans: gKey(ans), say: ['bosluga'], hintSay: ['satir_sutun'],
+      prompt: 'Boşluğa hangisi gelir?', hintText: 'Satırlara ve sütunlara bak',
+      opts: [ans, ...s.alts].map(g => [gKey(g), () => gEl(g), gName(g)]),
+      draw(qe) {
+        const box = el('div', 'mx');
+        s.cells.forEach((g, i) => {
+          const cell = el('div', 'mxc');
+          if (i === s.hole) { cell.classList.add('slot'); cell.textContent = '?'; q.slot = cell; } else cell.append(gEl(g));
+          box.append(cell);
+        });
+        qe.append(box);
+      },
+      fill() { q.slot.textContent = ''; q.slot.append(gEl(ans)); q.slot.classList.add('filled'); },
+    };
+    return q;
+  },
+  part(s) {
+    const cs = 100 / s.N, ans = blk(s.rows, s.hx, s.hy, s.K);
+    // Kolay desen 3 renk; Orta ve Zor'da 0 beyaz zemin, gerisi renk
+    const pal = v => s.white ? (v === '0' ? '#FFFFFF' : COLORS[s.pal[+v - 1]]) : COLORS[s.pal[+v]];
+    const cellsSvg = (rows, ox = 0, oy = 0, size = cs) => rows.map((r, y) => [...r].map((v, x) => `<rect x="${ox + x * size}" y="${oy + y * size}" width="${size + .3}" height="${size + .3}" fill="${pal(v)}"/>`).join('')).join('');
+    const blockEl = b => svgOf(`<g>${cellsSvg(b, 0, 0, 100 / s.K)}</g><rect x="1.5" y="1.5" width="97" height="97" rx="6" fill="none" stroke="${INK}" stroke-width="3"/>`);
+    const q = {
+      shape: true, ans: bKey(ans), say: ['bosluga'], hintSay: ['desen_bak'],
+      prompt: 'Hangi parça tamamlar?', hintText: 'Desenin geri kalanına bak',
+      opts: [ans, ...s.alts].map(b => [bKey(b), () => blockEl(b), 'Parça']),
+      draw(qe) {
+        const hole = `<rect x="${s.hx * cs}" y="${s.hy * cs}" width="${s.K * cs}" height="${s.K * cs}" fill="#FFFDF6" stroke="${INK}" stroke-width="2" stroke-dasharray="5 4"/><text x="${(s.hx + s.K / 2) * cs}" y="${(s.hy + s.K / 2) * cs + 7}" text-anchor="middle" font-size="${cs * 1.1}" font-weight="800" fill="${INK}">?</text>`;
+        q.svg = svgOf(`<g>${cellsSvg(s.rows)}</g><g class="hole">${hole}</g><rect x="1" y="1" width="98" height="98" rx="5" fill="none" stroke="${INK}" stroke-width="2.5"/>`, '0 0 100 100', 'shp part-svg');
+        const box = el('div', 'partq'); box.append(q.svg); qe.append(box);
+      },
+      fill() { q.svg.querySelector('.hole').innerHTML = `<g>${cellsSvg(ans, s.hx * cs, s.hy * cs)}</g><rect x="${s.hx * cs}" y="${s.hy * cs}" width="${s.K * cs}" height="${s.K * cs}" fill="none" stroke="#34C17B" stroke-width="2.5"/>`; },
+    };
+    return q;
+  },
+  view(s) {
+    if (s.mode === 'sil') {
+      const q = {
+        shape: true, ans: silKey(s.f), say: ['golge'], hintSay: ['dis_cizgi'],
+        prompt: 'Gölgesi hangisi?', hintText: 'Parçaların yerine bak',
+        opts: [s.f, ...s.alts].map(f => [silKey(f), () => svgOf(figSvg(f, true)), 'Gölge']),
+        draw(qe) { const box = el('div', 'viewq'); box.append(svgOf(figSvg(s.f, false), '0 0 100 100', 'shp big')); qe.append(box); },
+        fill() {},
+      };
+      return q;
+    }
+    const ask = { front: ['onden', 'Önden bakınca nasıl görünür?'], right: ['sagdan', 'Sağdan bakınca nasıl görünür?'], top: ['ustten', 'Üstten bakınca nasıl görünür?'] }[s.mode];
+    const ans = viewOf(s.h, s.mode), cv = cubesSvg(s.h, s.mode);
+    return {
+      shape: true, ans, say: [ask[0]], hintSay: [s.mode === 'top' ? 'ustten_ipucu' : 'kule_bak'],
+      prompt: ask[1], hintText: s.mode === 'top' ? 'Küplerin tepelerine bak' : 'Her sıradaki en uzun kuleye bak',
+      opts: [ans, ...s.alts].map(v => [v, () => viewSvg(v), 'Görünüş']),
+      draw(qe) { const box = el('div', 'viewq'); box.append(svgOf(cv.inner, cv.vb, 'shp big cubes')); qe.append(box); },
+      fill() {},
+    };
+  },
+  refl(s) {
+    const ans = reflT(s.parts, s.axis), frame = '<rect x="3" y="3" width="94" height="94" rx="12" fill="#fff" stroke="#D5DCE8" stroke-width="3"/>';
+    const q = {
+      shape: true, ans: reflKey(ans), say: ['ayna'], hintSay: ['ayna_yakin'],
+      prompt: 'Aynadaki hâli hangisi?', hintText: 'Aynaya yakın olan, yansımada da yakın olur',
+      opts: [ans, ...s.alts].map(p => [reflKey(p), () => svgOf(frame + partsSvg(p)), 'Yansıma']),
+      draw(qe) {
+        const box = el('div', 'reflq ' + s.axis);
+        q.out = el('div', 'rbox unknown', '?');
+        const known = el('div', 'rbox'); known.append(svgOf(frame + partsSvg(s.parts)));
+        box.append(known, el('div', 'rmirror'), q.out);
+        qe.append(box);
+      },
+      fill() { q.out.textContent = ''; q.out.append(svgOf(frame + partsSvg(ans))); q.out.classList.add('filled'); },
+    };
+    return q;
+  },
+  anal(s) {
+    const q = {
+      shape: true, ans: gKey(s.D), say: ['iliski'], hintSay: ['ne_degisti'],
+      prompt: 'Birinciye ne olduysa üçüncüye de o olur', hintText: 'İlk ikisinde ne değişti?',
+      opts: [s.D, ...s.alts].map(g => [gKey(g), () => gEl(g), gName(g)]),
+      draw(qe) {
+        const pair = (a, b) => { const p = el('div', 'apair'); const ca = el('div', 'acell'), cb = el('div', 'acell'); ca.append(gEl(a)); if (b) cb.append(gEl(b)); else { cb.classList.add('slot'); cb.textContent = '?'; q.slot = cb; } p.append(ca, el('span', 'aarrow', '→'), cb); return p; };
+        const box = el('div', 'analq'); box.append(pair(s.A, s.B), el('span', 'asep', 'gibi'), pair(s.C, null));
+        qe.append(box);
+      },
+      fill() { q.slot.textContent = ''; q.slot.append(gEl(s.D)); q.slot.classList.add('filled'); },
+    };
+    return q;
+  },
+});
+
 /* ================= Ses ve konuşma ================= */
 const Sound = {
   ctx: null,
@@ -632,7 +982,7 @@ function openSettings() {
     const snd = el('button', 'big-btn alt', Store.d.sound ? '🔊 Ses açık' : '🔇 Ses kapalı');
     snd.onclick = () => { Store.d.sound = !Store.d.sound; Store.save(); if (!Store.d.sound) Voice.stop(); snd.textContent = Store.d.sound ? '🔊 Ses açık' : '🔇 Ses kapalı'; Sound.play('tap'); };
     const par = el('button', 'big-btn alt', '🔒 Ebeveyn paneli');
-    par.onclick = () => { close(); Sound.play('tap'); parentGate(() => { draft = null; show('parent'); renderParent(); }); };
+    par.onclick = () => { close(); Sound.play('tap'); parentGate(() => { draft = null; parentTab = 'tasks'; show('parent'); renderParent(); }); };
     const ok = el('button', 'big-btn', 'Tamam'); ok.onclick = close;
     c.append(snd, par, ok);
   });
@@ -845,9 +1195,20 @@ function stepper(label, val, min, max, onChange) {
   w.append(el('span', '', label), btn('−', -1), v, btn('+', 1));
   return w;
 }
+// Ebeveyn paneli üç sekme: görevler, bilet ve altın, ayarlar
+let parentTab = 'tasks';
 function renderParent() {
   const body = $('parentBody'); body.innerHTML = '';
   const section = (title) => { const s = el('section', 'p-sec'); s.append(el('h2', '', title)); body.append(s); return s; };
+  const tabs = el('div', 'p-tabs');
+  for (const [k, txt] of [['tasks', '📋 Görevler'], ['wallet', '🎁 Bilet ve Altın'], ['settings', '⚙️ Ayarlar']]) {
+    const b = el('button', 'p-tab' + (parentTab === k ? ' on' : ''), txt);
+    b.onclick = () => { if (parentTab === k) return; Sound.play('tap'); parentTab = k; renderParent(); body.scrollTop = 0; };
+    tabs.append(b);
+  }
+  body.append(tabs);
+  if (parentTab === 'wallet') return renderParentWallet(section);
+  if (parentTab === 'settings') return renderParentSettings(section);
 
   const pending = Store.d.tasks.filter(t => t.claim);
   if (pending.length) {
@@ -910,14 +1271,28 @@ function renderParent() {
   };
   s3.append(el('p', 'p-note', 'Hazır görevler:'), tpl, el('p', 'p-note', 'Ya da kendin yaz:'), emo, name, kinds, nums, add);
 
-  const s4 = section('Hediye');
-  s4.append(el('p', 'p-note', `Şu an: 🪙 ${Store.d.coins} · 🎟️ ${Store.d.tickets}`));
-  const gifts = el('div', 'p-chips');
-  for (const [txt, fn] of [['+1 🎟️', () => { Store.d.tickets++; }], ['+5 🪙', () => { Store.d.coins += 5; }]]) {
-    const b = el('button', 'chip-btn', txt); b.onclick = () => { fn(); Store.save(); Sound.play('right'); renderParent(); }; gifts.append(b);
-  }
-  s4.append(gifts);
-
+}
+// Bilet ve altın: ebeveyn denemek ya da ödül vermek için doğrudan ekler/çıkarır (bilet sınırına takılmaz)
+function renderParentWallet(section) {
+  const change = fn => { fn(); Store.d.tickets = Math.max(0, Math.min(99, Store.d.tickets)); Store.d.coins = Math.max(0, Math.min(9999, Store.d.coins)); Store.save(); Sound.play('tap'); renderParent(); };
+  const counter = (ico, val, steps, apply) => {
+    const row = el('div', 'p-wallet');
+    row.append(el('span', 'p-wico', ico), el('b', 'p-wval', val));
+    const btns = el('div', 'p-chips');
+    for (const d of steps) { const b = el('button', 'chip-btn' + (d > 0 ? ' plus' : ''), (d > 0 ? '+' : '−') + Math.abs(d)); b.onclick = () => change(() => apply(d)); btns.append(b); }
+    row.append(btns); return row;
+  };
+  const s1 = section('Bilet');
+  s1.append(counter('🎟️', Store.d.tickets, [-1, 1, 3, 10], d => { Store.d.tickets += d; }),
+    el('p', 'p-note', `Çocuk matematik turlarıyla en fazla ${TICKET_MAX} bilet biriktirebilir; buradan eklenen bilet bu sınıra takılmaz.`));
+  const s2 = section('Altın');
+  s2.append(counter('🪙', Store.d.coins, [-10, -1, 5, 20, 100], d => { Store.d.coins += d; }));
+  const s3 = section('Deneme');
+  const t = el('button', 'big-btn', '🧪 10 bilet + 200 altın ekle');
+  t.onclick = () => change(() => { Store.d.tickets += 10; Store.d.coins += 200; });
+  s3.append(el('p', 'p-note', 'Oyunları ve dükkânı denemek için. İşin bitince yukarıdan geri azaltabilirsin.'), t);
+}
+function renderParentSettings(section) {
   const s5 = section('Ayarlar');
   const pin = el('button', 'chip-btn', '🔒 PIN değiştir'); pin.onclick = () => setPin(renderParent);
   const out = el('textarea', 'p-input code'); out.readOnly = true; out.hidden = true;
@@ -1017,7 +1392,7 @@ function render() {
   renderVisual();
 
   $('answers').innerHTML = '';
-  $('answers').className = 'answers' + (q.inStage ? ' hidden' : '');
+  $('answers').className = 'answers t-' + cur.spec.t + (q.inStage ? ' hidden' : '');
   const ans = q.inStage ? el('div', 'stage-answers n' + q.opts.length) : $('answers');
   if (q.inStage) qe.append(ans);
   // Sayı sorularında seçenekler metin; şekil sorularında her seçeneğin kendi çizimi var.
