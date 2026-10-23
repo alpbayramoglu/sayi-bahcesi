@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 29;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v29)
+const VERSION = 30;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v30)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -904,7 +904,7 @@ Object.assign(GEN, {
 });
 
 const enAsk = (s, ans, opts, say, draw) => ({
-  shape: true, ans, say, hintSay: ['en_talimat', 0, ...say],
+  shape: true, ans, say, hintSay: [],   // hoparlör kelimeyi yalnız bir kez söylesin (Kolay'da ipucu hep açık)
   prompt: 'Dinle ve doğru resmi bul', hintText: 'Bir kez daha dinle',
   opts,
   draw(qe) {
