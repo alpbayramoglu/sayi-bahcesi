@@ -40,6 +40,8 @@ for n in $(seq 1 9); do CLIPS+=("h$n|${n}00"); done
 
 # İngilizce: Samantha (Amerikan aksanı), çocuk için yavaş
 EN_CLIPS=(
+  "enp_good_job|Good job!" "enp_great_job|Great job!" "enp_awesome|Awesome!" "enp_super|Super!" "enp_well_done|Well done!"
+  "enp_excellent|Excellent!" "enp_perfect|Perfect!" "enp_very_good|Very good!" "enp_nice_work|Nice work!"
   "en_mom|mom"
   "en_dad|dad"
   "en_baby|baby"

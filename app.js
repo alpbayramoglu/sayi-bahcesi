@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 27;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v27)
+const VERSION = 28;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v28)
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -127,6 +127,9 @@ const GROUND_SLOTS = [[50, 70], [22, 62], [78, 64], [36, 80], [64, 82], [8, 76],
 const SKY_SLOTS = [[28, 22], [62, 16], [44, 34], [78, 30], [12, 30]];
 const EMOJI = ['🍎', '🐟', '⭐', '🍓', '🐞', '🎈', '🧁', '🐥', '🌸', '🍪', '🦋', '🚗'];
 const PRAISE = [['Aferin!', 'aferin'], ['Harika!', 'harika'], ['Süpersin!', 'supersin'], ['Çok güzel!', 'cok_guzel'], ['Bravo!', 'bravo']];
+// İngilizce turlarında övgü de İngilizce (Samantha); ilk eleman ikinci denemede doğru bilince
+const PRAISE_EN = [['Good job!', 'enp_good_job'], ['Great job!', 'enp_great_job'], ['Awesome!', 'enp_awesome'], ['Super!', 'enp_super'], ['Well done!', 'enp_well_done'], ['Excellent!', 'enp_excellent']];
+const inEnglish = () => !!(mode && modeOf(mode) && modeOf(mode).g === 'en');
 
 /* ================= Kayıt ================= */
 const Store = {
@@ -878,7 +881,7 @@ Object.assign(GEN, {
     return { t: 'enc', c, s, opts };
   },
   enn(lv) {
-    if (lv === 1) { const ns = sample([1, 2, 3, 4, 5], 3); return { t: 'enn', n: ns[0], opts: ns, e: pick(['🍎', '⭐', '🐱', '⚽', '🌸']) }; }
+    if (lv === 1) { const n = rnd(1, 10), set = new Set([n]); for (const v of shuffle([n + 1, n - 1, n + 2, n - 2])) if (set.size < 3 && v >= 1 && v <= 10) set.add(v); return { t: 'enn', n, opts: [...set] }; }
     if (lv === 2) { const n = rnd(1, 20), set = new Set([n]); for (const d of shuffle([1, -1, 2, -2, 10, -10])) if (set.size < 4 && n + d >= 1 && n + d <= 20) set.add(n + d); return { t: 'enn', n, opts: [...set] }; }
     // Zor: thirteen / thirty karışıklığı
     const teen = rnd(3, 9), pairs = [10 + teen, teen * 10, teen, teen * 10 > 20 ? 10 + teen + 1 : teen + 1];
@@ -1574,7 +1577,7 @@ function choose(btn, v) {
     if (first && cur.repeat) relieve(cur);
     round.results[round.i] = first ? 'ok' : 'miss';
     Sound.play('right');
-    const [word, clip] = first ? pick(PRAISE) : PRAISE[0];
+    const P = inEnglish() ? PRAISE_EN : PRAISE, [word, clip] = first ? pick(P.slice(1)) : P[0];
     round.streak = first ? round.streak + 1 : 0;
     // Üst üste 3, 6, 9 ilk denemede doğru: daha büyük kutlama
     if (round.streak >= 3 && round.streak % 3 === 0) { cheer('🔥 ' + round.streak); confetti(40); }
@@ -1630,7 +1633,8 @@ function finish() {
   Store.save();
   const es = $('endStars'); es.innerHTML = '';
   for (let i = 0; i < 3; i++) { const st = el('span', i < stars ? 'on' : '', '★'); st.style.animationDelay = (i * .25) + 's'; es.append(st); }
-  const [title, clip] = stars === 3 ? ['Mükemmel!', 'mukemmel'] : stars === 2 ? ['Çok iyi!', 'cok_iyi'] : ['Güzel çalıştın!', 'guzel_calistin'];
+  const [title, clip] = inEnglish() ? (stars === 3 ? ['Perfect!', 'enp_perfect'] : stars === 2 ? ['Very good!', 'enp_very_good'] : ['Nice work!', 'enp_nice_work'])
+    : stars === 3 ? ['Mükemmel!', 'mukemmel'] : stars === 2 ? ['Çok iyi!', 'cok_iyi'] : ['Güzel çalıştın!', 'guzel_calistin'];
   $('endTitle').textContent = title;
   $('endText').textContent = `${ROUND} sorudan ${s} tanesini ilk seferde bildin.`;
   // Altın: yıldız başına 2, Zor seviyede +2, yeni rekorda +1. Bilet: tur başına 1, en fazla TICKET_MAX.
