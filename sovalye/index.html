@@ -46,7 +46,7 @@
    8 dünya × 8 bölüm. 1–7. bölümler: bütün düşmanları yok et, blokların altındaki kapıya gir. 8. bölüm: dünyanın boss'u.
    Izgara 15×11: kenarlar ve çift koordinatlı sütunlar sert taş, aralar rastgele kırılan blok. Alev kendine de değer.
    Görünüm: bloklar üstten-önden (3/4) çizilir; zemin ve sert taşlar bölüm başında ayrı bir tuvale bir kez çizilir. */
-const VERSION = 'v0.5';   // her değişiklikte artır: v0.2, v0.3 …
+const VERSION = 'v0.6';   // her değişiklikte artır: v0.2, v0.3 …
 // Sayı Bahçesi'nin içinde (sayi-bahcesi/sovalye/) her bölüm 1 bilet, bitirince altın; ayrı repoda biletsiz bağımsız oyun
 const IN_APP = /\/sayi-bahcesi\/sovalye\//.test(location.pathname) || /[?&]app\b/.test(location.search);
 const Wallet = {
@@ -209,6 +209,7 @@ function tryMove(p, d, dist, dt) {
 function stepEnemy(e, dt) {
   if (e.dead) { e.dead += dt; return; }
   e.ph += dt;
+  if (e.wait > 0) { e.wait -= dt; return; }   // poz: kırılan tuğlanın yanında bekleme
   // Gittiği kareye bomba konduysa yarı yoldan geri döner: bombalı kareye (ve üstündeki oyuncuya) giremez
   if ((e.tx !== e.fx || e.ty !== e.fy) && bombAt(e.tx, e.ty)) {
     [e.tx, e.ty, e.fx, e.fy] = [e.fx, e.fy, e.tx, e.ty]; e.dir = BACK[e.dir];
@@ -306,6 +307,8 @@ function explode(b) {
 function burst(x, y, n, cols, sp) { for (let i = 0; i < n; i++) G.parts.push({ x: x + .5, y: y + .5, vx: (Math.random() - .5) * sp, vy: -Math.random() * sp * .8, t: .8, c: pick(cols) }); }
 function breakBlock(x, y) {
   G.map[y][x] = 0;
+  // yanındaki tuğla kırılan düşman bir an donup bekler; alev sönmeden açılan yere yürüyüp ölmesin
+  for (const e of G.enemies) if (!e.dead && Math.abs(Math.round(e.x) - x) + Math.abs(Math.round(e.y) - y) <= 1) e.wait = Math.max(e.wait || 0, 1);
   burst(x, y - .1, 12, G.th.sc, 6);
   const h = G.hidden[x + ',' + y];
   if (h === 'door') G.door = { x, y };
