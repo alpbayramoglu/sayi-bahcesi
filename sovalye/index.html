@@ -46,7 +46,7 @@
    8 dünya × 8 bölüm. 1–7. bölümler: bütün düşmanları yok et, blokların altındaki kapıya gir. 8. bölüm: dünyanın boss'u.
    Izgara 15×11: kenarlar ve çift koordinatlı sütunlar sert taş, aralar rastgele kırılan blok. Alev kendine de değer.
    Görünüm: bloklar üstten-önden (3/4) çizilir; zemin ve sert taşlar bölüm başında ayrı bir tuvale bir kez çizilir. */
-const VERSION = 'v0.4';   // her değişiklikte artır: v0.2, v0.3 …
+const VERSION = 'v0.5';   // her değişiklikte artır: v0.2, v0.3 …
 // Sayı Bahçesi'nin içinde (sayi-bahcesi/sovalye/) her bölüm 1 bilet, bitirince altın; ayrı repoda biletsiz bağımsız oyun
 const IN_APP = /\/sayi-bahcesi\/sovalye\//.test(location.pathname) || /[?&]app\b/.test(location.search);
 const Wallet = {
@@ -94,9 +94,11 @@ const WORLDS = [
   { name: 'Saat Kulesi', th: 'clock', pool: ['drop', 'crab', 'ghost'], add: {}, boss: 'bigcrab' },
   { name: 'Karanlık Kale', th: 'dark', pool: ['blob', 'drop', 'crab', 'ghost'], add: {}, boss: 'kingblob' },
 ];
-const ITEM_SEQ = ['bomb', 'fire', null, 'speed', 'fire', 'bomb', null];   // her bölümde en fazla bir güçlendirme
+// Güçlendirmeler seyrek: 64 bölümde 9 tane ("dünya-bölüm", 0'dan sayılır). Alınan bir daha çıkmaz (prog.got).
+const ITEMS_AT = { '0-1': 'bomb', '0-4': 'fire', '1-2': 'fire', '1-5': 'bomb', '2-3': 'speed', '3-1': 'fire', '3-5': 'bomb', '4-3': 'fire', '5-2': 'speed' };
+const CAP = { bombs: 4, fire: 5, speed: 2 };
 // Hız: yavaş başlar, bölüm ve dünya ilerledikçe artar (1-1'de 0,78; 8-7'de 1,4 civarı)
-const speedOf = (w, l) => .78 + l * .025 + w * .07;
+const speedOf = (w, l) => .76 + l * .015 + w * .035;   // 1-1'de 0,76; 8-7'de 1,1 civarı: zorluk hızdan çok düşman sayısı ve türünden
 function levelCfg(w, l) {
   const Wd = WORLDS[w], name = `${w + 1}-${l + 1}`;
   if (l === 7) return { w, l, name, boss: Wd.boss, soft: .14, enemies: [], item: null, spd: speedOf(w, 3) };
@@ -104,12 +106,14 @@ function levelCfg(w, l) {
   const n = Math.min(8, 2 + Math.floor(l * .6) + Math.floor(w * .5)), enemies = [];
   for (const [k, v] of Object.entries(Wd.add)) if (l >= +k) enemies.push(v);   // yeni düşman mutlaka görünsün
   while (enemies.length < n) enemies.push(pick(pool));
-  return { w, l, name, soft: clamp(.36 + l * .025 + w * .02, .3, .62), enemies, item: ITEM_SEQ[l], spd: speedOf(w, l) };
+  return { w, l, name, soft: clamp(.36 + l * .025 + w * .02, .3, .62), enemies, item: prog.got[w * 8 + l] ? null : ITEMS_AT[w + '-' + l] || null, spd: speedOf(w, l) };
 }
 
 /* ---------- kayıt ---------- */
 const SAVE_KEY = 'sovalye.v1';
-let prog = (() => { try { return Object.assign({ done: {}, bombs: 1, fire: 1, speed: 0 }, JSON.parse(localStorage.getItem(SAVE_KEY))); } catch (e) { return { done: {}, bombs: 1, fire: 1, speed: 0 }; } })();
+let prog = (() => { try { return Object.assign({ done: {}, got: {}, bombs: 1, fire: 1, speed: 0 }, JSON.parse(localStorage.getItem(SAVE_KEY))); } catch (e) { return { done: {}, bombs: 1, fire: 1, speed: 0 }; } })();
+// eski kayıtlarda tavanı aşanlar yeni tavana iner
+prog.got = prog.got || {}; for (const k of Object.keys(CAP)) prog[k] = Math.min(CAP[k], prog[k] || 0); prog.bombs = Math.max(1, prog.bombs); prog.fire = Math.max(1, prog.fire);
 const saveProg = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(prog)); } catch (e) {} };
 const unlocked = i => i === 0 || !!prog.done[i - 1];
 const worldOpen = w => unlocked(w * 8);
@@ -170,7 +174,7 @@ const blocks = (e, x, y) => { const c = cell(x, y); return c === 1 || (c === 2 &
    Önceden yön alma: istenen yön henüz kapalıysa eski yönde devam edilir, dönülebilen ilk yerde dönülür. */
 function movePlayer(dt, d) {
   const p = G.p; if (!d) return;
-  const dist = (3 + prog.speed * .6) * dt;
+  const dist = (2.8 + prog.speed * .45) * dt;
   if (tryMove(p, d, dist, dt)) { p.dir = d; p.last = d; return; }
   if (p.last && p.last !== d && p.last !== BACK[d] && tryMove(p, p.last, dist, dt)) { p.dir = p.last; return; }
   p.dir = d;
@@ -377,9 +381,10 @@ function step(dt) {
   const it = G.items[px + ',' + py];
   if (it && Math.hypot(p.x - px, p.y - py) < .4) {
     delete G.items[px + ',' + py]; sfx('item'); burst(px, py, 16, ['#FFD23F', '#fff'], 6);
-    if (it === 'bomb') prog.bombs = Math.min(6, prog.bombs + 1);
-    if (it === 'fire') prog.fire = Math.min(6, prog.fire + 1);
-    if (it === 'speed') prog.speed = Math.min(3, prog.speed + 1);
+    prog.got[G.w * 8 + G.l] = true;
+    if (it === 'bomb') prog.bombs = Math.min(CAP.bombs, prog.bombs + 1);
+    if (it === 'fire') prog.fire = Math.min(CAP.fire, prog.fire + 1);
+    if (it === 'speed') prog.speed = Math.min(CAP.speed, prog.speed + 1);
     saveProg();
     G.toast = { text: { bomb: '+1 bomba', fire: 'Alev uzadı', speed: 'Hız arttı' }[it], t: 1.4 };
   }
