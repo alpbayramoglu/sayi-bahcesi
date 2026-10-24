@@ -46,7 +46,7 @@
    8 dünya × 8 bölüm. 1–7. bölümler: bütün düşmanları yok et, blokların altındaki kapıya gir. 8. bölüm: dünyanın boss'u.
    Izgara 15×11: kenarlar ve çift koordinatlı sütunlar sert taş, aralar rastgele kırılan blok. Alev kendine de değer.
    Görünüm: bloklar üstten-önden (3/4) çizilir; zemin ve sert taşlar bölüm başında ayrı bir tuvale bir kez çizilir. */
-const VERSION = 'v0.6';   // her değişiklikte artır: v0.2, v0.3 …
+const VERSION = 'v0.7';   // her değişiklikte artır: v0.2, v0.3 …
 // Sayı Bahçesi'nin içinde (sayi-bahcesi/sovalye/) her bölüm 1 bilet, bitirince altın; ayrı repoda biletsiz bağımsız oyun
 const IN_APP = /\/sayi-bahcesi\/sovalye\//.test(location.pathname) || /[?&]app\b/.test(location.search);
 const Wallet = {
@@ -94,11 +94,15 @@ const WORLDS = [
   { name: 'Saat Kulesi', th: 'clock', pool: ['drop', 'crab', 'ghost'], add: {}, boss: 'bigcrab' },
   { name: 'Karanlık Kale', th: 'dark', pool: ['blob', 'drop', 'crab', 'ghost'], add: {}, boss: 'kingblob' },
 ];
-// Güçlendirmeler seyrek: 64 bölümde 9 tane ("dünya-bölüm", 0'dan sayılır). Alınan bir daha çıkmaz (prog.got).
-const ITEMS_AT = { '0-1': 'bomb', '0-4': 'fire', '1-2': 'fire', '1-5': 'bomb', '2-3': 'speed', '3-1': 'fire', '3-5': 'bomb', '4-3': 'fire', '5-2': 'speed' };
-const CAP = { bombs: 4, fire: 5, speed: 2 };
+// Güçlendirmeler ("dünya-bölüm", 0'dan sayılır; boss bölümünde yok). Alınan bir daha çıkmaz (prog.got).
+// Bomba her dünyada bir; alev 1, 3, 4, 5, 7. dünyalarda; hız 1, 3, 5. dünyalarda (küçük artış).
+const ITEMS_AT = {
+  '0-1': 'bomb', '0-3': 'fire', '0-5': 'speed', '1-2': 'bomb', '2-1': 'bomb', '2-3': 'fire', '2-5': 'speed', '3-2': 'bomb', '3-4': 'fire',
+  '4-1': 'bomb', '4-3': 'fire', '4-5': 'speed', '5-2': 'bomb', '6-1': 'bomb', '6-4': 'fire', '7-2': 'bomb',
+};
+const CAP = { bombs: 9, fire: 6, speed: 3 };
 // Hız: yavaş başlar, bölüm ve dünya ilerledikçe artar (1-1'de 0,78; 8-7'de 1,4 civarı)
-const speedOf = (w, l) => .76 + l * .015 + w * .035;   // 1-1'de 0,76; 8-7'de 1,1 civarı: zorluk hızdan çok düşman sayısı ve türünden
+const speedOf = (w, l) => .55 + l * .012 + w * .045;   // yavaş başlar: 1-1'de 0,55; 8-7'de 0,94 civarı. Zorluk hızdan çok düşman sayısı ve türünden
 function levelCfg(w, l) {
   const Wd = WORLDS[w], name = `${w + 1}-${l + 1}`;
   if (l === 7) return { w, l, name, boss: Wd.boss, soft: .14, enemies: [], item: null, spd: speedOf(w, 3) };
@@ -158,7 +162,7 @@ const ESPD = { blob: 1.7, drop: 2.5, crab: 2.6, ghost: 1.35 };
 function mkEnemy(kind, x, y, mul = 1) {
   return { kind, x, y, tx: x, ty: y, fx: x, fy: y, dir: pick(Object.keys(DIRS)), spd: ESPD[kind] * mul, dead: 0, ph: Math.random() * 6 };
 }
-const BOSS = { kingblob: { hp: 3, spd: 1.2 }, bigcrab: { hp: 4, spd: 1.6 }, snowman: { hp: 4, spd: .85 } };
+const BOSS = { kingblob: { hp: 3, spd: .9 }, bigcrab: { hp: 4, spd: 1.2 }, snowman: { hp: 4, spd: .65 } };
 function mkBoss(kind, x, y, w) {
   const b = BOSS[kind], spd = b.spd * (1 + w * .05);
   return { kind, boss: true, x, y, tx: x, ty: y, fx: x, fy: y, dir: 'left', spd, base: spd, hp: b.hp, max: b.hp, inv: 1, dead: 0, ph: 0, cd: 2, charge: null };
@@ -174,7 +178,7 @@ const blocks = (e, x, y) => { const c = cell(x, y); return c === 1 || (c === 2 &
    Önceden yön alma: istenen yön henüz kapalıysa eski yönde devam edilir, dönülebilen ilk yerde dönülür. */
 function movePlayer(dt, d) {
   const p = G.p; if (!d) return;
-  const dist = (2.8 + prog.speed * .45) * dt;
+  const dist = (2.25 + prog.speed * .3) * dt;   // şövalye de yavaş başlar; her hız güçlendirmesi küçük bir artış
   if (tryMove(p, d, dist, dt)) { p.dir = d; p.last = d; return; }
   if (p.last && p.last !== d && p.last !== BACK[d] && tryMove(p, p.last, dist, dt)) { p.dir = p.last; return; }
   p.dir = d;
@@ -226,7 +230,7 @@ function stepEnemy(e, dt) {
     else {
       if (e.charge) { e.charge = null; e.spd = e.base; e.cd = 2.5; G.shake = .2; sfx('thud'); }
       const ln = lineTo(e);
-      if (e.cd <= 0 && ln) { e.charge = dir = ln; e.spd = 4.6; sfx('charge'); }
+      if (e.cd <= 0 && ln) { e.charge = dir = ln; e.spd = 3.4; sfx('charge'); }
       else if (!opts.includes(dir) || Math.random() < .2) { const f = opts.filter(k => k !== BACK[e.dir]); dir = pick(f.length ? f : opts); }
     }
   } else if ((e.kind === 'drop' && Math.random() < .5) || (e.kind === 'kingblob' && Math.random() < .5)) {
@@ -271,7 +275,7 @@ function openDoorNear(x, y) {
 }
 function stepShots(dt) {
   for (const s of G.shots) {
-    s.x += s.dx * 3.8 * dt; s.y += s.dy * 3.8 * dt; s.t += dt;
+    s.x += s.dx * 3 * dt; s.y += s.dy * 3 * dt; s.t += dt;
     const tx = Math.round(s.x), ty = Math.round(s.y);
     if (cell(tx, ty) !== 0 || bombAt(tx, ty) || inFlame(tx, ty)) { s.dead = true; burst(s.x, s.y, 6, ['#fff', '#CFE8FF'], 4); }
     if (!s.dead && G.p.inv <= 0 && Math.hypot(s.x - G.p.x, s.y - G.p.y) < .45) { s.dead = true; return die(); }
