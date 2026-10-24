@@ -562,8 +562,9 @@ body.tabbed #gardenHomeBtn, body.tabbed #shop .back { display: none; }
   .tab { padding: 8px 0; }
   .home-side { justify-content: center; }
   .games-body { width: min(100%, 1000px); }
-  .game-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); flex: 1; min-height: 0; }
-  .game-card .g-art { flex: 1; height: auto; min-height: 90px; }
+  .game-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+  /* görsel her ekranda aynı oranda: yüksek pencerede uzayıp aşırı yakınlaşmasın */
+  .game-card .g-art { height: auto; aspect-ratio: 12 / 5; min-height: 90px; }
   .ticket-card { padding: 8px 14px; }
   .t-slots i { width: 26px; height: 34px; border-radius: 7px; }
 }
