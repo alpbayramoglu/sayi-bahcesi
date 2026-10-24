@@ -19,7 +19,9 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 32;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v32)
+const VERSION = 33;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v33)
+// Oyunların kendi sürümleri (kartlarda görünür). Oyunu güncelleyince burayı da artır; Şövalye Macerası'nda dosyadaki VERSION ile aynı tut.
+const GAME_VERSIONS = { war: 'v1.0', race3d: 'v0.3', knight: 'v0.2' };
 const MODES = [
   { key: 'add', g: 'num', label: 'Toplama', ico: '2+3', c: '#34C17B' },
   { key: 'sub', g: 'num', label: 'Çıkarma', ico: '5−2', c: '#FF9F43' },
@@ -1049,11 +1051,14 @@ function renderGames() {
   $('tTitle').textContent = n > 0 ? `${n} biletin var` : 'Biletin yok';
   $('tSub').textContent = n >= TICKET_MAX ? 'Biletlerin dolu, hadi oyna! Her oyun 1 bilet.' : n > 0 ? 'Her oyun 1 bilet. Bir tur bitir, 1 bilet daha kazan.' : 'Bir matematik turu bitir, bilet kazan.';
   $('tGo').hidden = n > 0;
-  for (const id of ['warBtn', 'raceBtn', 'race3dBtn']) $(id).classList.toggle('no-ticket', !(n > 0));
+  for (const id of ['warBtn', 'knightBtn', 'race3dBtn']) $(id).classList.toggle('no-ticket', !(n > 0));
   const w = warNext();
   $('warSub').textContent = (w ? `Bölüm ${w} seni bekliyor` : 'Bütün bölümler bitti!') + ' · 1 ya da 2 kişi';
-  $('raceNew').hidden = !!Store.d.raceSeen;
   $('race3dNew').hidden = !!Store.d.race3dSeen;
+  $('knightNew').hidden = !!Store.d.knightSeen;
+  // Şövalye Macerası ilerlemesi kendi kaydında (sovalye.v1)
+  try { const k = JSON.parse(localStorage.getItem('sovalye.v1')) || {}, n = Object.keys(k.done || {}).length; if (n) $('knightSub').textContent = `${n}/64 bölüm · sıradaki ${Math.floor(n / 8) + 1}-${n % 8 + 1}`; } catch (e) {}
+  for (const v of document.querySelectorAll('.g-ver')) v.textContent = GAME_VERSIONS[v.dataset.game] || '';
 }
 // Alıştırma sayfası: zorluk + o gruptaki alıştırmalar
 let catGroup = 'num';
@@ -1825,7 +1830,7 @@ function confetti(n = 18) {
 for (const b of document.querySelectorAll('.level')) b.onclick = () => { Sound.play('tap'); Store.d.level = +b.dataset.level; Store.save(); renderCat(); };
 $('playBtn').onclick = () => { Sound.play('tap'); startRound(nextMode()); };
 $('warBtn').onclick = () => { Sound.play('tap'); goWar(); };
-$('raceBtn').onclick = () => { Sound.play('tap'); if (Store.d.tickets > 0 && !Store.d.raceSeen) { Store.d.raceSeen = true; Store.save(); } goWar('yaris/'); };
+$('knightBtn').onclick = () => { Sound.play('tap'); if (Store.d.tickets > 0 && !Store.d.knightSeen) { Store.d.knightSeen = true; Store.save(); } goWar('sovalye/'); };
 $('race3dBtn').onclick = () => { Sound.play('tap'); if (Store.d.tickets > 0 && !Store.d.race3dSeen) { Store.d.race3dSeen = true; Store.save(); } goWar('yaris3d/'); };
 $('tGo').onclick = () => { Sound.play('tap'); startRound(nextMode()); };
 // Oyundan geri tuşuyla dönülürse sayfa bellekten gelir; oyunda kazanılan altın ve harcanan bilet kaybolmasın

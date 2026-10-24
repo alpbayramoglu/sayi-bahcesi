@@ -544,26 +544,6 @@ h1 { color: var(--ink); text-shadow: none; }
 /* oyun kartlarının küçük resimleri: CSS ile çizilmiş */
 .g-art { position: relative; display: block; height: clamp(110px, 17vh, 150px); overflow: hidden; }
 .g-art i { position: absolute; display: block; }
-.art-war { background: linear-gradient(#7FC6F2, #CDEBFB); }
-.art-war .hill { left: -30px; right: -30px; bottom: -60px; height: 115px; border-radius: 50%; background: #fff; box-shadow: inset 0 6px 0 #DCEBF8; }
-.art-war .sm1 { left: 14%; bottom: 30px; width: 42px; height: 42px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px var(--ink); }
-.art-war .sm2 { left: calc(14% + 7px); bottom: 66px; width: 28px; height: 28px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px var(--ink); }
-.art-war .arc { left: 32%; top: 24%; width: 38%; height: 50%; border-top: 4px dashed #fff; border-radius: 50% 50% 0 0; }
-.art-war .ball { left: calc(70% - 10px); top: 34%; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px var(--ink); }
-.art-war .cat { right: 8%; bottom: 28px; width: 44px; height: 48px; border-radius: 21px 21px 13px 13px; background: #F39A3B; box-shadow: 0 0 0 3px var(--ink); }
-.art-r3d { background: #3A4A5A url(yaris3d/card.jpg) center / cover no-repeat; }
-.art-race { background: linear-gradient(#4FB6EE, #FFF0C2 75%); }
-.art-race .hill { left: -20px; right: -20px; bottom: 56px; height: 48px; border-radius: 50% 50% 0 0; background: #58C46D; }
-.art-race .road { left: 0; right: 0; bottom: 0; height: 60px; background: #555C76; }
-.art-race .curb { left: 0; right: 0; bottom: 56px; height: 8px; background: repeating-linear-gradient(90deg, #E5483B 0 20px, #fff 20px 40px); box-shadow: 0 0 0 2px var(--ink); }
-.art-race .dash { left: 0; right: 0; bottom: 26px; height: 4px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.8) 0 26px, transparent 26px 52px); }
-.art-race .body { left: calc(50% - 40px); bottom: 24px; width: 104px; height: 24px; border-radius: 8px 12px 9px 9px; background: #FFC21F; box-shadow: 0 0 0 3px var(--ink); }
-.art-race .back { left: calc(50% - 40px); bottom: 38px; width: 30px; height: 24px; border-radius: 9px 5px 0 0; background: #FFC21F; box-shadow: 0 0 0 3px var(--ink); }
-.art-race .drv { left: calc(50% - 4px); bottom: 46px; width: 26px; height: 28px; border-radius: 13px; background: #2B3550; box-shadow: 0 0 0 3px var(--ink); }
-.art-race .w1, .art-race .w2 { bottom: 8px; width: 26px; height: 26px; border-radius: 50%; background: #343A52; box-shadow: 0 0 0 3px var(--ink), inset 0 0 0 7px #343A52, inset 0 0 0 13px #E9EEF5; }
-.art-race .w1 { left: calc(50% - 30px); } .art-race .w2 { left: calc(50% + 30px); }
-.art-race .sp1 { left: calc(50% - 130px); bottom: 38px; width: 70px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.85); }
-.art-race .sp2 { left: calc(50% - 150px); bottom: 28px; width: 90px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.6); }
 
 /* Sekme çubuğu: dikeyde altta, yatayda solda */
 .tabbar { display: none; position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 6px max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); background: #fff; box-shadow: 0 -4px 0 rgba(30, 34, 51, .06); }
@@ -598,9 +578,6 @@ body.tabbed #gardenHomeBtn, body.tabbed #shop .back { display: none; }
 .ticket-card { flex-wrap: wrap; }
 .ticket-card .t-txt { flex: 1 1 160px; }
 .t-go { order: 3; flex: 1 0 100%; padding: 10px 14px; }
-.art-war .cat::before, .art-war .cat::after { content: ''; position: absolute; top: -13px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 14px solid var(--ink); }
-.art-war .cat::before { left: 4px; } .art-war .cat::after { right: 4px; }
-.art-race .drv::after { content: ''; position: absolute; left: 6px; top: 8px; width: 14px; height: 7px; border-radius: 4px; background: linear-gradient(90deg, #fff 0 5px, transparent 5px 9px, #fff 9px); }
 body.tabbed .ver { bottom: calc(82px + max(10px, env(safe-area-inset-bottom))); }
 @media (min-aspect-ratio: 1/1) { body.tabbed .ver { bottom: 6px; } }
 
@@ -664,3 +641,10 @@ body.tabbed .ver { bottom: calc(82px + max(10px, env(safe-area-inset-bottom))); 
 #catGrid.many { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (orientation: landscape) { #catGrid.many { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; } #catGrid.many .mode { padding: 6px 4px; } }
 .levels.no-range small { display: none; }
+
+/* Oyun kartları: oyundan alınmış gerçek kare + sürüm etiketi */
+.g-art.shot { background: #2B3550 center / cover no-repeat; }
+.g-ver { position: absolute; left: 10px; bottom: 8px; padding: 1px 8px; border-radius: 9px; background: rgba(30,34,51,.72); color: #fff; font-size: 13px; }
+.g-ver:empty { display: none; }
+/* Uygulama sürümü: köşede okunur dursun */
+.ver { font-size: 13px; color: rgba(36, 50, 74, .7); background: rgba(255,255,255,.6); padding: 2px 7px; border-radius: 8px; }
