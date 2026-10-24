@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 38;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v38)
+const VERSION = 39;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v39)
 // Oyunların kendi sürümleri (kartlarda görünür). Oyunu güncelleyince burayı da artır; Şövalye Macerası'nda dosyadaki VERSION ile aynı tut.
 const GAME_VERSIONS = { war: 'v1.0', race3d: 'v0.3', knight: 'v0.7' };
 const MODES = [
@@ -999,6 +999,7 @@ function show(name) {
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('active', s.id === name);
   // Alt sekme çubuğu yalnızca dört ana bölümde görünür; alıştırma, tur ve sonuç ekranında gizlenir
   document.body.classList.toggle('tabbed', TABS.includes(name));
+  $('ver').hidden = name !== 'home';   // uygulama sürümü yalnız ana sayfada (öbür sayfalarda görsellerin üstüne biniyordu)
   for (const t of document.querySelectorAll('.tab')) { const on = t.dataset.tab === name; t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); }
   if (TABS.includes(name)) renderWallet();
 }
