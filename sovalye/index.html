@@ -46,7 +46,7 @@
    8 dünya × 8 bölüm. 1–7. bölümler: bütün düşmanları yok et, blokların altındaki kapıya gir. 8. bölüm: dünyanın boss'u.
    Izgara 15×11: kenarlar ve çift koordinatlı sütunlar sert taş, aralar rastgele kırılan blok. Alev kendine de değer.
    Görünüm: bloklar üstten-önden (3/4) çizilir; zemin ve sert taşlar bölüm başında ayrı bir tuvale bir kez çizilir. */
-const VERSION = 'v0.7';   // her değişiklikte artır: v0.2, v0.3 …
+const VERSION = 'v0.8';   // her değişiklikte artır: v0.2, v0.3 …
 // Sayı Bahçesi'nin içinde (sayi-bahcesi/sovalye/) her bölüm 1 bilet, bitirince altın; ayrı repoda biletsiz bağımsız oyun
 const IN_APP = /\/sayi-bahcesi\/sovalye\//.test(location.pathname) || /[?&]app\b/.test(location.search);
 const Wallet = {
@@ -606,6 +606,13 @@ function panel() {   // sol panel: durdur düğmesi, bölüm, can, güçlendirme
   } else {
     c.fillStyle = 'rgba(255,255,255,.09)'; rr(10, 258, pw - 20, 36, 12); c.fill();
     blobShape(30, 276, 12, '#FF7AB6', 0, 'down'); outlined(String(G.enemies.filter(e => !e.dead).length), 64, 277, 22, '#fff');
+  }
+  if (IN_APP) {   // kalan bilet (Sayı Bahçesi'nden)
+    const n = Wallet.tickets, y = H - 40;
+    c.fillStyle = 'rgba(255,255,255,.09)'; rr(10, y - 18, pw - 20, 36, 12); c.fill();
+    c.fillStyle = n > 0 ? '#E5483B' : '#7D889F'; rr(17, y - 9, 26, 18, 4); c.fill();
+    c.fillStyle = '#2B3550'; c.beginPath(); c.arc(17, y, 3.5, 0, 7); c.arc(43, y, 3.5, 0, 7); c.fill();
+    outlined(String(n), 64, y + 1, 22, n > 0 ? '#FFC21F' : '#D5DCE8');
   }
 }
 function door(X, Y, open) {
