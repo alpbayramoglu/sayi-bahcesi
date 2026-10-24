@@ -532,7 +532,7 @@ h1 { color: var(--ink); text-shadow: none; }
 .t-go[hidden] { display: none; }
 .game-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .game-card { position: relative; display: flex; flex-direction: column; border-radius: 26px; background: #fff; box-shadow: 0 7px 0 var(--c); overflow: hidden; text-align: left; transition: transform .08s; }
-.game-card.no-ticket .g-art { filter: grayscale(.6) brightness(1.05); }
+/* Bilet yokken de görsel canlı kalır; bilet durumu bilet etiketinden anlaşılır */
 .game-card.no-ticket .g-cost { background: #EEF1F5; color: #8A97AD; }
 .g-info { display: flex; align-items: center; gap: 10px; padding: 10px 14px 12px; }
 .g-txt { display: flex; flex-direction: column; flex: 1; min-width: 0; }
@@ -643,7 +643,7 @@ body.tabbed .ver { bottom: calc(82px + max(10px, env(safe-area-inset-bottom))); 
 .levels.no-range small { display: none; }
 
 /* Oyun kartları: oyundan alınmış gerçek kare + sürüm etiketi */
-.g-art.shot { background: #2B3550 center / cover no-repeat; }
+.g-art.shot { background: #2B3550 center / cover no-repeat; filter: saturate(1.15) contrast(1.05); }
 .g-ver { position: absolute; left: 10px; bottom: 8px; padding: 1px 8px; border-radius: 9px; background: rgba(30,34,51,.72); color: #fff; font-size: 13px; }
 .g-ver:empty { display: none; }
 /* Uygulama sürümü: köşede okunur dursun */

@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 37;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v37)
+const VERSION = 38;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v38)
 // Oyunların kendi sürümleri (kartlarda görünür). Oyunu güncelleyince burayı da artır; Şövalye Macerası'nda dosyadaki VERSION ile aynı tut.
 const GAME_VERSIONS = { war: 'v1.0', race3d: 'v0.3', knight: 'v0.7' };
 const MODES = [
