@@ -46,7 +46,7 @@
    8 dünya × 8 bölüm. 1–7. bölümler: bütün düşmanları yok et, blokların altındaki kapıya gir. 8. bölüm: dünyanın boss'u.
    Izgara 15×11: kenarlar ve çift koordinatlı sütunlar sert taş, aralar rastgele kırılan blok. Alev kendine de değer.
    Görünüm: bloklar üstten-önden (3/4) çizilir; zemin ve sert taşlar bölüm başında ayrı bir tuvale bir kez çizilir. */
-const VERSION = 'v0.8';   // her değişiklikte artır: v0.2, v0.3 …
+const VERSION = 'v0.9';   // her değişiklikte artır: v0.2, v0.3 …
 // Sayı Bahçesi'nin içinde (sayi-bahcesi/sovalye/) her bölüm 1 bilet, bitirince altın; ayrı repoda biletsiz bağımsız oyun
 const IN_APP = /\/sayi-bahcesi\/sovalye\//.test(location.pathname) || /[?&]app\b/.test(location.search);
 const Wallet = {
@@ -110,14 +110,14 @@ function levelCfg(w, l) {
   const n = Math.min(8, 2 + Math.floor(l * .6) + Math.floor(w * .5)), enemies = [];
   for (const [k, v] of Object.entries(Wd.add)) if (l >= +k) enemies.push(v);   // yeni düşman mutlaka görünsün
   while (enemies.length < n) enemies.push(pick(pool));
-  return { w, l, name, soft: clamp(.36 + l * .025 + w * .02, .3, .62), enemies, item: prog.got[w * 8 + l] ? null : ITEMS_AT[w + '-' + l] || null, spd: speedOf(w, l) };
+  return { w, l, name, soft: clamp(.36 + l * .025 + w * .02, .3, .62), enemies, item: prog.got[w * 8 + l] || (prog.pending || []).some(p => p.idx === w * 8 + l) ? null : ITEMS_AT[w + '-' + l] || null, spd: speedOf(w, l) };
 }
 
 /* ---------- kayıt ---------- */
 const SAVE_KEY = 'sovalye.v1';
-let prog = (() => { try { return Object.assign({ done: {}, got: {}, bombs: 1, fire: 1, speed: 0 }, JSON.parse(localStorage.getItem(SAVE_KEY))); } catch (e) { return { done: {}, bombs: 1, fire: 1, speed: 0 }; } })();
+let prog = (() => { try { return Object.assign({ done: {}, got: {}, pending: [], bombs: 1, fire: 1, speed: 0 }, JSON.parse(localStorage.getItem(SAVE_KEY))); } catch (e) { return { done: {}, bombs: 1, fire: 1, speed: 0 }; } })();
 // eski kayıtlarda tavanı aşanlar yeni tavana iner
-prog.got = prog.got || {}; for (const k of Object.keys(CAP)) prog[k] = Math.min(CAP[k], prog[k] || 0); prog.bombs = Math.max(1, prog.bombs); prog.fire = Math.max(1, prog.fire);
+prog.got = prog.got || {}; prog.pending = prog.pending || []; for (const k of Object.keys(CAP)) prog[k] = Math.min(CAP[k], prog[k] || 0); prog.bombs = Math.max(1, prog.bombs); prog.fire = Math.max(1, prog.fire);
 const saveProg = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(prog)); } catch (e) {} };
 const unlocked = i => i === 0 || !!prog.done[i - 1];
 const worldOpen = w => unlocked(w * 8);
@@ -142,17 +142,19 @@ function makeLevel(w, l) {
   }
   const softs = []; for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (map[y][x] === 2) softs.push([x, y]);
   softs.sort(() => Math.random() - .5);
-  const hidden = {};   // "x,y" → 'door' | güçlendirme
+  const hidden = {}, src = {};   // "x,y" → 'door' | güçlendirme; src: güçlendirmenin ait olduğu bölüm
   if (!R.boss) {
     const far = softs.filter(([x, y]) => x + y > 10);
     hidden[(far.length ? far : softs)[0]] = 'door';
-    if (R.item) { const s = softs.find(k => !hidden[k]); if (s) hidden[s] = R.item; }
+    if (R.item) { const s = softs.find(k => !hidden[k]); if (s) { hidden[s] = R.item; src[s] = w * 8 + l; } }
   }
+  // önceki bölümlerde kaçırılan hediyeler burada başka tuğlaların altına saklanır
+  for (const pd of prog.pending) { const s = softs.find(k => !hidden[k]); if (s) { hidden[s] = pd.item; src[s] = pd.idx; } }
   const enemies = [], spots = free.filter(([x, y]) => x + y > 7).sort(() => Math.random() - .5);
   for (const kind of R.enemies) if (spots.length) { const [x, y] = spots.pop(); enemies.push(mkEnemy(kind, x, y, R.spd)); }
   floorCache = null;
   return {
-    w, l, R, name: R.name, th, map, hidden, items: {}, door: null, bombs: [], flames: [], parts: [], shots: [], rings: [], enemies,
+    w, l, R, name: R.name, th, map, hidden, src, items: {}, door: null, bombs: [], flames: [], parts: [], shots: [], rings: [], enemies,
     amb: [],
     boss: R.boss ? mkBoss(R.boss, 9, 5, w) : null,
     p: { x: 1, y: 1, dir: 'down', last: null, walk: 0, dead: 0, inv: 1.2 }, t: 0, state: 'play', clearT: 0, shake: 0,
@@ -162,7 +164,7 @@ const ESPD = { blob: 1.7, drop: 2.5, crab: 2.6, ghost: 1.35 };
 function mkEnemy(kind, x, y, mul = 1) {
   return { kind, x, y, tx: x, ty: y, fx: x, fy: y, dir: pick(Object.keys(DIRS)), spd: ESPD[kind] * mul, dead: 0, ph: Math.random() * 6 };
 }
-const BOSS = { kingblob: { hp: 3, spd: .9 }, bigcrab: { hp: 4, spd: 1.2 }, snowman: { hp: 4, spd: .65 } };
+const BOSS = { kingblob: { hp: 5, spd: .9 }, bigcrab: { hp: 4, spd: 1.2 }, snowman: { hp: 4, spd: .65 } };
 function mkBoss(kind, x, y, w) {
   const b = BOSS[kind], spd = b.spd * (1 + w * .05);
   return { kind, boss: true, x, y, tx: x, ty: y, fx: x, fy: y, dir: 'left', spd, base: spd, hp: b.hp, max: b.hp, inv: 1, dead: 0, ph: 0, cd: 2, charge: null };
@@ -259,9 +261,29 @@ function stepBoss(b, dt) {
     b.cd = 2.8; sfx('throw');
     for (const [dx, dy] of Object.values(DIRS)) G.shots.push({ x: b.x + dx * .6, y: b.y + dy * .6, dx, dy, t: 0 });
   }
+  if (b.kind === 'kingblob') {
+    if (b.hp <= 2 && !b.angry) { b.angry = true; b.base *= 1.45; if (!b.charge) b.spd = b.base; }   // sinirlendi
+    if (b.jump) {   // havada: alev işlemez; inince yere çarpar
+      const J = b.jump; J.t += dt; const k = Math.min(1, J.t / J.d);
+      b.x = lerp(J.fx, J.tx, k); b.y = lerp(J.fy, J.ty, k); b.h = Math.sin(k * Math.PI) * 2.2;
+      if (k >= 1) {
+        b.jump = null; b.h = 0; b.x = b.tx = b.fx = J.tx; b.y = b.ty = b.fy = J.ty;
+        G.shake = .45; G.rings.push({ x: b.x, y: b.y, t: 0, big: true }); sfx('thud'); burst(b.x, b.y + .3, 16, ['#FF8AC0', '#fff'], 7);
+        if (G.p.inv <= 0 && Math.hypot(G.p.x - b.x, G.p.y - b.y) < 1.05) die();
+        b.jcd = b.angry ? 2.4 : 4;
+      }
+      return;
+    }
+    b.jcd = (b.jcd ?? 5) - dt;   // ilk zıplama bölüm başından ~5 sn sonra
+    if (b.jcd <= 0 && !b.charge) {   // bulunduğu yerden oyuncunun karesine (ya da en yakın boş kareye) zıpla
+      let best = null; const px = Math.round(G.p.x), py = Math.round(G.p.y);
+      for (let yy = 1; yy < ROWS - 1; yy++) for (let xx = 1; xx < COLS - 1; xx++) if (cell(xx, yy) === 0 && !bombAt(xx, yy)) { const d = Math.abs(xx - px) + Math.abs(yy - py); if (!best || d < best[0]) best = [d, xx, yy]; }
+      if (best) { b.jump = { t: 0, d: b.angry ? 1 : 1.25, fx: b.x, fy: b.y, tx: best[1], ty: best[2] }; sfx('throw'); return; }
+    }
+  }
   stepEnemy(b, dt);
   // alev boss'un karesine ya da yanına değerse vurulur
-  if (b.inv <= 0 && G.flames.some(f => f.t > .08 && f.cells.some(c => Math.abs(c.x - b.x) < .95 && Math.abs(c.y - b.y) < .95))) {
+  if (b.inv <= 0 && !b.jump && G.flames.some(f => f.t > .08 && f.cells.some(c => Math.abs(c.x - b.x) < .95 && Math.abs(c.y - b.y) < .95))) {
     b.hp--; b.inv = 1.4; G.shake = .35; sfx('hit');
     burst(b.x, b.y, 14, ['#FFD23F', '#fff'], 8);
     if (b.hp <= 0) { b.dead = .01; sfx('bossdown'); burst(b.x, b.y, 44, ['#FFD23F', '#FF7A1A', '#fff', '#E5483B'], 12); G.rings.push({ x: b.x, y: b.y, t: 0, big: true }); }
@@ -376,7 +398,7 @@ function step(dt) {
   for (const b of [...G.bombs]) if ((b.t -= dt) <= 0) explode(b);
   for (const f of G.flames) f.t -= dt; G.flames = G.flames.filter(f => f.t > 0);
   stepShots(dt); if (G.state !== 'play') return;
-  if (G.boss) { stepBoss(G.boss, dt); if (!G.boss.dead && p.inv <= 0 && Math.hypot(G.boss.x - p.x, G.boss.y - p.y) < .78) return die(); }
+  if (G.boss) { stepBoss(G.boss, dt); if (G.state !== 'play') return; if (!G.boss.dead && !G.boss.jump && p.inv <= 0 && Math.hypot(G.boss.x - p.x, G.boss.y - p.y) < .78) return die(); }
   for (const e of G.enemies) {
     stepEnemy(e, dt);
     if (!e.dead && inFlame(Math.round(e.x), Math.round(e.y))) { e.dead = .01; sfx('pop'); burst(e.x, e.y, 8, ['#fff', '#FFD23F'], 5); }
@@ -388,7 +410,8 @@ function step(dt) {
   const it = G.items[px + ',' + py];
   if (it && Math.hypot(p.x - px, p.y - py) < .4) {
     delete G.items[px + ',' + py]; sfx('item'); burst(px, py, 16, ['#FFD23F', '#fff'], 6);
-    prog.got[G.w * 8 + G.l] = true;
+    const from = G.src[px + ',' + py] ?? G.w * 8 + G.l;
+    prog.got[from] = true; prog.pending = prog.pending.filter(q => q.idx !== from);
     if (it === 'bomb') prog.bombs = Math.min(CAP.bombs, prog.bombs + 1);
     if (it === 'fire') prog.fire = Math.min(CAP.fire, prog.fire + 1);
     if (it === 'speed') prog.speed = Math.min(CAP.speed, prog.speed + 1);
@@ -410,7 +433,10 @@ function afterDeath() {
 }
 function levelClear() {
   G.state = 'done';
-  const idx = G.w * 8 + G.l; prog.done[idx] = true; saveProg();
+  const idx = G.w * 8 + G.l; prog.done[idx] = true;
+  // bu bölümün hediyesi bulunmadıysa (ya da alevde yandıysa) sonraki bölüme geçer
+  if (G.R.item && !prog.got[idx] && !prog.pending.some(q => q.idx === idx)) prog.pending.push({ idx, item: G.R.item });
+  saveProg();
   const gain = G.l === 7 ? 5 : 2; if (IN_APP) Wallet.addCoins(gain);
   const loot = IN_APP ? `<p style="font-size:22px;color:#B87A00;margin:0 0 10px">+${gain} 🪙</p>` : '';
   const cost = IN_APP ? ' <small>🎟️ 1</small>' : '';
@@ -796,9 +822,17 @@ function boss(b) {
   c.fillStyle = 'rgba(20,20,40,.28)'; c.beginPath(); c.ellipse(x, y + 24, 30, 8, 0, 0, 7); c.fill();
   c.lineJoin = 'round'; c.strokeStyle = INK; c.lineWidth = 3.5;
   const [dx] = DIRS[b.dir];
-  if (b.kind === 'kingblob') {   // Kral Top: dev pembe top, altın taç
-    blobShape(x, y - 4 + Math.sin(b.ph * 3) * 2, 28, '#FF5FA2', b.ph, b.dir);
-    c.translate(x, y - 34 + Math.sin(b.ph * 3) * 2);
+  if (b.kind === 'kingblob') {   // Kral Top: dev pembe top, altın taç; zıplarken inilecek yerde hedef çemberi
+    const lift = (b.h || 0) * T;
+    if (b.jump) {
+      const tx = b.jump.tx * T + T / 2, ty = b.jump.ty * T + T / 2, k = b.jump.t / b.jump.d;
+      c.strokeStyle = `rgba(229,72,59,${.5 + .4 * Math.sin(G.t * 20)})`; c.lineWidth = 4; c.beginPath(); c.ellipse(tx, ty + 6, 30 * (.5 + k * .6), 12 * (.5 + k * .6), 0, 0, 7); c.stroke();
+      c.fillStyle = `rgba(20,20,40,${.15 + k * .25})`; c.beginPath(); c.ellipse(tx, ty + 8, 26 * (.4 + k * .6), 9 * (.4 + k * .6), 0, 0, 7); c.fill();
+      c.strokeStyle = INK; c.lineWidth = 3.5;
+    }
+    if (b.angry && !b.jump) { c.fillStyle = 'rgba(255,60,60,.18)'; c.beginPath(); c.arc(x, y - 4, 40 + Math.sin(G.t * 12) * 3, 0, 7); c.fill(); }
+    blobShape(x, y - 4 - lift + Math.sin(b.ph * 3) * 2, 28, b.angry ? '#FF3F7F' : '#FF5FA2', b.ph, b.dir);
+    c.translate(x, y - 34 - lift + Math.sin(b.ph * 3) * 2);
     c.fillStyle = '#FFC21F'; c.beginPath(); c.moveTo(-16, 8); c.lineTo(-16, -6); c.lineTo(-8, 2); c.lineTo(0, -10); c.lineTo(8, 2); c.lineTo(16, -6); c.lineTo(16, 8); c.closePath(); c.fill(); c.stroke();
     c.fillStyle = '#E5483B'; c.beginPath(); c.arc(0, 2, 3, 0, 7); c.fill();
   } else if (b.kind === 'bigcrab') {   // Dev Yengeç: koşarken kırmızı parlar
