@@ -46,8 +46,8 @@
    8 dünya × 8 bölüm. 1–7. bölümler: bütün düşmanları yok et, blokların altındaki kapıya gir. 8. bölüm: dünyanın boss'u.
    Izgara 15×11: kenarlar ve çift koordinatlı sütunlar sert taş, aralar rastgele kırılan blok. Alev kendine de değer.
    Görünüm: bloklar üstten-önden (3/4) çizilir; zemin ve sert taşlar bölüm başında ayrı bir tuvale bir kez çizilir. */
-const VERSION = 'v0.9';   // her değişiklikte artır: v0.2, v0.3 …
-// Sayı Bahçesi'nin içinde (sayi-bahcesi/sovalye/) her bölüm 1 bilet, bitirince altın; ayrı repoda biletsiz bağımsız oyun
+const VERSION = 'v0.10';   // her değişiklikte artır: v0.2, v0.3 …
+// Sayı Bahçesi'nin içinde (sayi-bahcesi/sovalye/) 1 bilet = 3 can (bölümler arası taşınır), bitirince altın; ayrı repoda biletsiz bağımsız oyun
 const IN_APP = /\/sayi-bahcesi\/sovalye\//.test(location.pathname) || /[?&]app\b/.test(location.search);
 const Wallet = {
   key: 'sayi-bahcesi.v1',
@@ -118,6 +118,7 @@ const SAVE_KEY = 'sovalye.v1';
 let prog = (() => { try { return Object.assign({ done: {}, got: {}, pending: [], bombs: 1, fire: 1, speed: 0 }, JSON.parse(localStorage.getItem(SAVE_KEY))); } catch (e) { return { done: {}, bombs: 1, fire: 1, speed: 0 }; } })();
 // eski kayıtlarda tavanı aşanlar yeni tavana iner
 prog.got = prog.got || {}; prog.pending = prog.pending || []; for (const k of Object.keys(CAP)) prog[k] = Math.min(CAP[k], prog[k] || 0); prog.bombs = Math.max(1, prog.bombs); prog.fire = Math.max(1, prog.fire);
+if (typeof prog.lives !== 'number') prog.lives = 0;   // 0: yeni tur için bilet gerekir
 const saveProg = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(prog)); } catch (e) {} };
 const unlocked = i => i === 0 || !!prog.done[i - 1];
 const worldOpen = w => unlocked(w * 8);
@@ -125,7 +126,7 @@ const doneIn = w => Array.from({ length: 8 }, (_, l) => prog.done[w * 8 + l] ? 1
 const nextIn = w => { for (let l = 0; l < 8; l++) if (!prog.done[w * 8 + l]) return l; return 7; };
 const curWorldOf = () => { let w = 0; for (let i = 0; i < 8; i++) if (worldOpen(i)) w = i; return w; };
 
-let scene = 'worlds', curWorld = 0, lives = 3, G = null, mapT = 0, mapAmb = null, mapAmbKey = '';
+let scene = 'worlds', curWorld = 0, G = null, mapT = 0, mapAmb = null, mapAmbKey = '';
 
 /* ---------- bölüm kurulumu ---------- */
 function makeLevel(w, l) {
@@ -423,8 +424,8 @@ function step(dt) {
 }
 function die() { if (G.state !== 'play') return; G.state = 'dead'; G.p.dead = .01; sfx('die'); }
 function afterDeath() {
-  lives--;
-  if (lives <= 0) {
+  prog.lives = Math.max(0, prog.lives - 1); saveProg();
+  if (prog.lives <= 0) {
     G.state = 'over';
     overlay(`<div class="card"><h2>Canın bitti</h2><p>Bölüm ${G.name} yeniden denenebilir.<br>Güçlendirmelerin duruyor.</p><button data-a="retry">Tekrar dene${IN_APP ? ' <small>🎟️ 1</small>' : ''}</button><button class="alt" data-a="map">Harita</button></div>`);
     return;
@@ -439,18 +440,20 @@ function levelClear() {
   saveProg();
   const gain = G.l === 7 ? 5 : 2; if (IN_APP) Wallet.addCoins(gain);
   const loot = IN_APP ? `<p style="font-size:22px;color:#B87A00;margin:0 0 10px">+${gain} 🪙</p>` : '';
-  const cost = IN_APP ? ' <small>🎟️ 1</small>' : '';
   if (G.l === 7) {
     const last = G.w === 7;
     overlay(`<div class="card"><h2>${last ? 'Bütün dünyalar kurtarıldı! 🏆' : WORLDS[G.w].name + ' kurtarıldı!'}</h2><p>${last ? 'Gerçek bir şövalyesin!' : 'Sıradaki dünya açıldı: ' + WORLDS[G.w + 1].name}</p>${loot}<button data-a="worlds">Dünya haritası</button></div>`);
-  } else overlay(`<div class="card"><h2>Bölüm ${G.name} tamam! ⭐</h2><p>Güçlendirmelerin seninle geliyor.</p>${loot}<button data-a="nextlv">Sonraki bölüm${cost}</button><button class="alt" data-a="map">Harita</button></div>`);
+  } else overlay(`<div class="card"><h2>Bölüm ${G.name} tamam! ⭐</h2><p>Güçlendirmelerin seninle geliyor.</p>${loot}<button data-a="nextlv">Sonraki bölüm</button><button class="alt" data-a="map">Harita</button></div>`);
 }
-function startLevel(w, l) {
-  if (IN_APP && !Wallet.useTicket()) {
-    overlay(`<div class="card"><h2>🎟️ Biletin bitti</h2><p>Sayı Bahçesi'nde bir matematik turu bitir,<br>bilet kazan. Her bölüm 1 bilet.</p><button data-a="home">Sayı Bahçesi</button><button class="alt" data-a="closeov">Tamam</button></div>`);
-    return;
+function startLevel(w, l) {   // can kalmadıysa yeni tur: uygulamada 1 bilet = 3 can
+  if (prog.lives <= 0) {
+    if (IN_APP && !Wallet.useTicket()) {
+      overlay(`<div class="card"><h2>🎟️ Biletin bitti</h2><p>Sayı Bahçesi'nde bir matematik turu bitir,<br>bilet kazan. 1 bilet = 3 can.</p><button data-a="home">Sayı Bahçesi</button><button class="alt" data-a="${G ? 'map' : 'closeov'}">Tamam</button></div>`);
+      return;
+    }
+    prog.lives = 3; saveProg();
   }
-  lives = 3; G = makeLevel(w, l); scene = 'play'; document.body.classList.add('playing'); overlay(''); }
+  G = makeLevel(w, l); scene = 'play'; document.body.classList.add('playing'); overlay(''); }
 function toMap(s = 'world') { scene = s; G = null; document.body.classList.remove('playing'); held.length = 0; overlay(''); mapT = 0; }
 
 /* ---------- çizim: ortak ---------- */
@@ -623,7 +626,7 @@ function panel() {   // sol panel: durdur düğmesi, bölüm, can, güçlendirme
   c.fillStyle = 'rgba(255,255,255,.4)'; c.beginPath(); c.ellipse(pw / 2 - 7, 25, 7, 4, -.4, 0, 7); c.fill();
   c.fillStyle = INK; rr(pw / 2 - 8, 25, 6, 18, 2); c.fill(); rr(pw / 2 + 2, 25, 6, 18, 2); c.fill();
   outlined(G.name, pw / 2, 80, 24, '#FFC21F');
-  for (let i = 0; i < 3; i++) heart(22 + i * 24, 108, i < lives);
+  for (let i = 0; i < 3; i++) heart(22 + i * 24, 108, i < prog.lives);
   const slot = (y, it, n) => { c.fillStyle = 'rgba(255,255,255,.09)'; rr(10, y - 18, pw - 20, 36, 12); c.fill(); icon(30, y, it, 1); outlined(String(n), 64, y + 1, 22, '#fff'); };
   slot(146, 'bomb', prog.bombs); slot(188, 'fire', prog.fire); slot(230, 'speed', prog.speed + 1);
   if (G.boss) {
@@ -1235,7 +1238,7 @@ addEventListener('keydown', e => {
   if (e.key === 'Enter' && ov.hidden) { if (scene === 'world') startLevel(curWorld, nextIn(curWorld)); else if (scene === 'worlds') { curWorld = curWorldOf(); scene = 'world'; } }
 });
 addEventListener('keyup', e => { if (KEYS[e.key]) release(KEYS[e.key]); });
-function pause() { if (!G || G.state !== 'play') return; G.state = 'paused'; overlay(`<div class="card"><h2>Durdu</h2><p>Bölüm ${G.name}</p><button data-a="resume">Devam</button><button class="alt" data-a="map">Haritaya dön</button></div>`); }
+function pause() { if (G && (G.state === 'over' || G.state === 'done')) { curWorld = G.w; return toMap('world'); } if (!G || G.state !== 'play') return; G.state = 'paused'; overlay(`<div class="card"><h2>Durdu</h2><p>Bölüm ${G.name}</p><button data-a="resume">Devam</button><button class="alt" data-a="map">Haritaya dön</button></div>`); }
 const toLogical = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
 // Dokunmatik: sol yarıda parmak nereye değerse joystick orada açılır; sağ yarıya dokunmak bomba bırakır
 const joy = { id: null, x0: 0, y0: 0, dir: null }, joyEl = document.getElementById('joy'), knob = document.getElementById('knob'), hint = document.getElementById('bombHint');
