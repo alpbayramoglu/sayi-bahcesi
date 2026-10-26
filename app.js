@@ -19,7 +19,7 @@ const LEVELS = {
   2: { options: 4, visual: 'pictures', always: false },  // 0–10
   3: { options: 4, visual: 'frames', always: false },    // 0–20, 10'luk çerçeve
 };
-const VERSION = 43;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v43)
+const VERSION = 44;         // sw.js içindeki CACHE ile aynı tut (sayi-bahcesi-v44)
 // Oyunların kendi sürümleri (kartlarda görünür). Oyunu güncelleyince burayı da artır; Şövalye Macerası'nda dosyadaki VERSION ile aynı tut.
 const GAME_VERSIONS = { war: 'v1.0', race3d: 'v0.3', knight: 'v0.10' };
 const MODES = [
@@ -48,8 +48,10 @@ const FRIENDS = ['🌱', '🌷', '🌼', '🐞', '🌻', '🐝', '🍄', '🦋',
   '🐢', '🌈', '🐿️', '🐸', '🌺', '🦊', '🐥', '🦉', '🍎', '🐑', '🦄', '🌵', '🐠', '🎈', '🏡'];
 const STARS_PER_FRIEND = 3;
 // Ekonomi: yıldız bahçe için birikir (hiç harcanmaz). Altın dükkânda harcanır.
-// Her matematik turu bir maç bileti verir; bilet en fazla TICKET_MAX birikir ki matematik → oyun döngüsü korunsun.
-const TICKET_MAX = 3;
+// Her matematik turu bir maç bileti verir; bilet en fazla ticketMax() birikir ki matematik → oyun döngüsü korunsun.
+// Sınırı ebeveyn seçer (3, 5 ya da 10); varsayılan 3.
+const TICKET_MAXES = [3, 5, 10];
+const ticketMax = () => TICKET_MAXES.includes(Store.d.ticketMax) ? Store.d.ticketMax : 3;
 // Savaş eşyaları (anahtarlar savas/game.js içindeki ITEMS ile aynı). num: sayı seçerek kullanılır.
 const SHOP_GROUPS = [['throw', 'Atılanlar'], ['num', 'Sayılı'], ['def', 'Destek'], ['race', 'Yarış eşyaları']];
 const SHOP = [
@@ -1014,8 +1016,8 @@ function nextMode() {
 function renderHome() {
   const m = modeOf(nextMode());
   $('playWhat').textContent = `${m.label} · ${LEVEL_NAME[lv()]}`;
-  const full = Store.d.tickets >= TICKET_MAX;
-  $('lootTicket').textContent = full ? `🎟️ ${TICKET_MAX}/${TICKET_MAX} dolu` : '🎟️ 1 bilet';
+  const max = ticketMax(), full = Store.d.tickets >= max;
+  $('lootTicket').textContent = full ? `🎟️ ${max}/${max} dolu` : '🎟️ 1 bilet';
   const maxCoins = 6 + (lv() === 3 ? 2 : 0) + (bestOf(m.key) < 3 ? 1 : 0);
   $('lootCoins').textContent = `🪙 ${maxCoins} altına kadar`;
   renderWallet();
@@ -1032,7 +1034,8 @@ function renderHome() {
 function renderWallet() {
   const n = Store.d.tickets;
   $('wTickets').textContent = n; $('wCoins').textContent = Store.d.coins; $('wStars').textContent = Store.d.stars;
-  $('wTicketChip').setAttribute('aria-label', `${n} bilet, en fazla ${TICKET_MAX}`);
+  $('wTicketMax').textContent = '/' + ticketMax();
+  $('wTicketChip').setAttribute('aria-label', `${n} bilet, en fazla ${ticketMax()}`);
   $('tabTickets').hidden = !(n > 0); $('tabTickets').textContent = n;
   $('gardenDot').hidden = !(friendsFor(Store.d.stars) > Store.d.seen || worldState(Store.d.stars).open > (Store.d.worldSeen || 1));
 }
@@ -1048,9 +1051,13 @@ function renderGames() {
   renderWallet();
   const n = Store.d.tickets;
   $('gCoins').textContent = Store.d.coins;
-  $('tSlots').querySelectorAll('i').forEach((s, i) => s.classList.toggle('on', i < n));
+  // Kutucuk sayısı bilet sınırı kadar; 10'da iki sıra küçük kutucuk ki telefona sığsın
+  const slots = $('tSlots'), max = ticketMax();
+  if (slots.children.length !== max) { slots.innerHTML = ''; for (let i = 0; i < max; i++) slots.append(el('i')); }
+  slots.classList.toggle('many', max > 5);
+  slots.querySelectorAll('i').forEach((s, i) => s.classList.toggle('on', i < n));
   $('tTitle').textContent = n > 0 ? `${n} biletin var` : 'Biletin yok';
-  $('tSub').textContent = n >= TICKET_MAX ? 'Biletlerin dolu, hadi oyna! Her oyun 1 bilet.' : n > 0 ? 'Her oyun 1 bilet. Bir tur bitir, 1 bilet daha kazan.' : 'Bir matematik turu bitir, bilet kazan.';
+  $('tSub').textContent = n >= ticketMax() ? 'Biletlerin dolu, hadi oyna! Her oyun 1 bilet.' : n > 0 ? 'Her oyun 1 bilet. Bir tur bitir, 1 bilet daha kazan.' : 'Bir matematik turu bitir, bilet kazan.';
   $('tGo').hidden = n > 0;
   for (const id of ['warBtn', 'knightBtn', 'race3dBtn']) $(id).classList.toggle('no-ticket', !(n > 0));
   const w = warNext();
@@ -1393,7 +1400,15 @@ function renderParentWallet(section) {
   };
   const s1 = section('Bilet');
   s1.append(counter('🎟️', Store.d.tickets, [-1, 1, 3, 10], d => { Store.d.tickets += d; }),
-    el('p', 'p-note', `Çocuk matematik turlarıyla en fazla ${TICKET_MAX} bilet biriktirebilir; buradan eklenen bilet bu sınıra takılmaz.`));
+    el('p', 'p-note', `Çocuk matematik turlarıyla en fazla ${ticketMax()} bilet biriktirebilir; buradan eklenen bilet bu sınıra takılmaz.`));
+  const sMax = section('Bilet sınırı');
+  const maxRow = el('div', 'p-chips');
+  for (const m of TICKET_MAXES) {
+    const b = el('button', 'chip-btn' + (ticketMax() === m ? ' on' : ''), `🎟️ ${m}`);
+    b.onclick = () => change(() => { Store.d.ticketMax = m; });
+    maxRow.append(b);
+  }
+  sMax.append(maxRow, el('p', 'p-note', 'Matematik turlarıyla en fazla kaç bilet birikebileceğini seçer. Sınırı düşürürsen elindeki biletler silinmez; sınırın altına inene kadar yeni bilet gelmez.'));
   const s2 = section('Altın');
   s2.append(counter('🪙', Store.d.coins, [-10, -1, 5, 20, 100], d => { Store.d.coins += d; }));
   const s3 = section('Deneme');
@@ -1637,13 +1652,13 @@ function finish() {
     : stars === 3 ? ['Mükemmel!', 'mukemmel'] : stars === 2 ? ['Çok iyi!', 'cok_iyi'] : ['Güzel çalıştın!', 'guzel_calistin'];
   $('endTitle').textContent = title;
   $('endText').textContent = `${ROUND} sorudan ${s} tanesini ilk seferde bildin.`;
-  // Altın: yıldız başına 2, Zor seviyede +2, yeni rekorda +1. Bilet: tur başına 1, en fazla TICKET_MAX.
+  // Altın: yıldız başına 2, Zor seviyede +2, yeni rekorda +1. Bilet: tur başına 1, en fazla ticketMax().
   const coins = stars * 2 + (lv() === 3 ? 2 : 0) + (stars > prevBest ? 1 : 0);
-  const ticket = Store.d.tickets < TICKET_MAX;
+  const max = ticketMax(), ticket = Store.d.tickets < max;
   Store.d.coins += coins; if (ticket) Store.d.tickets++;
   Store.save();
   const loot = $('endLoot'); loot.innerHTML = '';
-  loot.append(el('span', 'chip', `+${coins} 🪙`), el('span', 'chip', ticket ? '+1 🎟️' : `🎟️ ${TICKET_MAX}/${TICKET_MAX}`));
+  loot.append(el('span', 'chip', `+${coins} 🪙`), el('span', 'chip', ticket ? '+1 🎟️' : `🎟️ ${max}/${max}`));
   show('end');
   Sound.play('win'); confetti(40);
   Voice.say(newWorld ? [clip, 0, 0, newWorld.opened] : nf ? [clip, 0, 0, nf.w.clip] : [clip], .9);
