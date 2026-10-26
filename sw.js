@@ -2,8 +2,9 @@
 // Bütün dosyalar tek sürüm olarak birlikte önbelleğe alınır ve hep önbellekten verilir;
 // böylece yeni index.html ile eski app.js gibi karışık bir sürüm oluşmaz.
 // Her yayında CACHE adını artır: yeni service worker bütün dosyaları birlikte yeniden indirir.
-const CACHE = 'sayi-bahcesi-v44';   // app.js içindeki VERSION ile aynı tut
+const CACHE = 'sayi-bahcesi-v45';   // app.js içindeki VERSION ile aynı tut
 importScripts('audio/clips.js');   // self.CLIPS: tools/make-audio.sh'in ürettiği ses parçaları
+importScripts('kamp/audio/clips.js');   // self.KAMP_CLIPS: kamp/tools/make-audio.sh'in ürettiği Kar Kampı sesleri
 const ASSETS = [
   ...self.CLIPS.map(n => `./audio/${n}.mp3`),
   './',
@@ -28,6 +29,12 @@ const ASSETS = [
   './yaris3d/game.js',
   './yaris3d/three.min.js',
   './yaris3d/card.jpg',
+  './img/card-kamp.jpg',
+  './kamp/',
+  './kamp/index.html',
+  './kamp/game.js',
+  ...self.KAMP_CLIPS.map(n => `./kamp/audio/${n}.mp3`),
+  ...Array.from({ length: 101 }, (_, i) => `./kamp/nums/n${i}.mp3`),
   './fonts/exo2-italic-900.woff',
   './fonts/exo2-800.woff',
 ];

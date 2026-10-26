@@ -162,6 +162,15 @@ const Save = {
   },
   save() { try { localStorage.setItem(this.key, JSON.stringify(this.d)); } catch (e) {} },
 };
+// Sayı Bahçesi içinde (index.html'de data-tickets) her bölüm 1 bilet. Ayrı kar-kampi sitesinde bilet yok.
+const TICKETS = document.documentElement.hasAttribute('data-tickets');
+const Wallet = {
+  key: 'sayi-bahcesi.v1',
+  read() { try { return JSON.parse(localStorage.getItem(this.key)) || {}; } catch (e) { return {}; } },
+  write(d) { try { localStorage.setItem(this.key, JSON.stringify(d)); } catch (e) {} },
+  get tickets() { return this.read().tickets || 0; },
+  useTicket() { const d = this.read(); if (!(d.tickets > 0)) return false; d.tickets--; this.write(d); return true; },
+};
 Save.load();
 
 /* ================= Ses ================= */
@@ -1873,6 +1882,19 @@ function dynBoxes() {
 }
 
 /* ----- Bölüm akışı ----- */
+// Menüden ya da "Sonraki bölüm"den girilen bölüm 1 bilet harcar. Bölüm içinde yeni gün ve baştan başlatma bedava.
+function playChapter(n) {
+  if (TICKETS && !Wallet.useTicket()) return noTicket();
+  startChapter(n);
+}
+function noTicket() {
+  Snd.stopVoice(); G.mode = 'result';
+  modal(cd => {
+    cd.append(el('div', 'kicker', '🎟️ 0'), el('h2', '', 'Biletin bitti'), el('p', '', 'Her bölüm 1 bilet. Bir matematik turu bitir, bilet kazan!'));
+    const b = el('a', 'btn', '← Sayı Bahçesi'); b.href = '../'; cd.append(b);
+    const m = el('button', 'btn alt', 'Menü'); m.onclick = () => { Snd.fx('tap'); toMenu(); }; cd.append(m);
+  });
+}
 function startChapter(n) {
   Snd.stopVoice(); closeModal(); $('progPanel').hidden = true;
   G.ch = n; G.clock = 0; G.jobs = []; G.flags = {}; G.fails = 0; G.day = 1; G.dayIdx = 0; G.auto = null; G.priceAdd = 0; G.catches = 0; G.pending = []; G.waste = null;
@@ -2041,7 +2063,7 @@ function chapterDone() {
     cd.append(el('p', '', (G.fails ? `${G.fails} gece üşüdük ama kamp ayakta. ` : 'Kimse üşümedi, kimse aç kalmadı. ') +
       (last ? 'Kar Kampı burada bitiyor: sönük bir ocaktan bütün bir köy kurdun. İstediğin bölümü yeniden oynayıp daha az odunla, daha az günde bitirmeyi deneyebilirsin.' : 'Kamp büyümeye hazır.')));
     wasteRows(cd, wv);
-    if (!last) { const b = el('button', 'btn', 'Sonraki bölüm'); b.onclick = () => { Snd.fx('tap'); startChapter(n + 1); }; cd.append(b); }
+    if (!last) { const b = el('button', 'btn', 'Sonraki bölüm'); b.onclick = () => { Snd.fx('tap'); playChapter(n + 1); }; cd.append(b); }
     const m = el('button', last ? 'btn' : 'btn alt', 'Menü'); m.onclick = () => { Snd.fx('tap'); toMenu(); }; cd.append(m);
   });
   if (last) finale();
@@ -2059,7 +2081,7 @@ const UNLOCK_ALL = /[?&](hepsi|all)\b/.test(location.search);
 const isOpen = n => n === 1 || UNLOCK_ALL || !!Save.d.done[n - 1];
 function renderMenu() {
   const c = $('menuCard'); c.innerHTML = '';
-  c.append(el('div', 'kicker', '20 bölüm'), el('h1', '', 'Kar Kampı'), el('p', '', 'Sönük ocağı yak, misafirleri doyur, kampı büyüt. Kar tanelerini oku, tabakları say, odununu akıllıca harca.'));
+  c.append(el('div', 'kicker', TICKETS ? `20 bölüm · 🎟️ ${Wallet.tickets} · her bölüm 1 bilet` : '20 bölüm'), el('h1', '', 'Kar Kampı'), el('p', '', 'Sönük ocağı yak, misafirleri doyur, kampı büyüt. Kar tanelerini oku, tabakları say, odununu akıllıca harca.'));
   c.append(el('div', 'lbl', 'Mont'));
   const sw = el('div', 'row');
   COATS.forEach((co, i) => { const b = el('button', 'sw' + (Save.d.color === i ? ' on' : '')); b.style.background = co.coat; b.setAttribute('aria-label', 'Mont rengi'); b.onclick = () => { Snd.fx('tap'); Save.d.color = i; Save.save(); buildPlayer(); renderMenu(); }; sw.append(b); });
@@ -2072,7 +2094,7 @@ function renderMenu() {
     st.style.flex = '0 0 auto';
     b.append(el('b', '', String(n)), s, st);
     if (!isOpen(n)) { b.disabled = true; b.classList.add('locked'); b.querySelector('b').textContent = '🔒'; }
-    b.onclick = () => { if (!isOpen(n)) return; Snd.unlock(); Snd.fx('tap'); startChapter(n); };
+    b.onclick = () => { if (!isOpen(n)) return; Snd.unlock(); Snd.fx('tap'); playChapter(n); };
     chs.append(b);
   });
   c.append(chs);

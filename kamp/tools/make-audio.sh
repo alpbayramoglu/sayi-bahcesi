@@ -153,4 +153,7 @@ clip() {   # clip <metin> <çıktı.mp3>
 
 for c in "${CLIPS[@]}"; do clip "${c#*|}" "$OUT/${c%%|*}.mp3"; done
 for i in $(seq 0 100); do clip "$i" "$NUMS/n$i.mp3"; done
+# Sayı Bahçesi'nin service worker'ı bu listeyle Kar Kampı seslerini önbelleğe alır
+names=(); for c in "${CLIPS[@]}"; do names+=("\"${c%%|*}\""); done
+printf '// tools/make-audio.sh tarafından üretilir, elle düzenleme.\nself.KAMP_CLIPS = [%s];\n' "$(IFS=,; echo "${names[*]}")" > "$OUT/clips.js"
 echo "${#CLIPS[@]} parça → $OUT/, 101 sayı → $NUMS/"
