@@ -13,6 +13,7 @@ cd ~/sayi-bahcesi && python3 -m http.server 8000
 Bölüm 1–3 öğrenme aşamasıdır: ocak karesinde her kar tanesinin altında iki odun yuvası var, ocak gerektiği kadar odun alır, dolunca tik çıkar.
 Bölüm 4'ten itibaren ocak cevabı söylemez. Karede yalnız kar taneleri ve ocaktaki odun sayısı durur, tik çıkmaz. Ocak fazla odunu da alır, fazlası duman olup boşa yanar. Ateş gereken odun kadar büyür. Baykuş ve akşam uyarısı ocağın yeterli olup olmadığını söylemez. Uyu düğmesi yalnız öğleden sonra görünür ve ocağa bakmaz. Sabah ekranında boşa yanan odun ve yarısı boşa giden yemek bilgi olarak yazılır ve okunur; yıldızı etkilemez. Odun ve balık 0,5 saniyede bir bırakılır.
 Ocağın sağ önündeki odun yığını, ocağa konan odunla büyür; boş yer ya da çerçeve çizilmez, fazla odun yığına değil ateşe gider. Her misafirin önünde bir tabak durur, konan yemek tabakta görünür (büyük balık ve ekmek iki tabağa yarım yarım bölünür).
+Kilerin rafı odunluk gibi çalışır: tabaklar dolunca fazla yemek rafa konur (en fazla 8), sırtta yemek yokken kilere gelince raftan alınır. Raf gün boyunca durur, yeni bölümde boşalır. Katı bölümlerde güneş çubuğunun ortasındaki ay, Uyu düğmesinin ne zaman açılacağını gösterir.
 Yardımcı da fazla odunu ocağa koyar. Ne kadar taşıyacağını "2 kez" ve "3 kez" kartları belirler: kartın önündeki sıra toplam o kadar çalışır.
 
 ## Bölümler
@@ -46,6 +47,6 @@ Sayılar `game.js`'in başındaki `CFG` tablosunda.
 ## Dosyalar
 
 - `game.js`: oyun. Bütün modeller ve dokular kodla üretilir (Three.js r128, `../yaris3d/three.min.js`).
-- `audio/`: Yelda sesiyle sesli yönlendirmeler, her bölümün giriş metni (`ch1`–`ch20`) ve eksik listesinin cümle parçaları (`e_*`). Sayılar Sayı Bahçesi'nin `../audio/n0–n100` kayıtlarından okunur. `tools/make-audio.sh` metinleri `game.js` içindeki `LINES` ve `CHAPTERS` ile aynı tutar; metin değişince betiği yeniden çalıştır.
+- `audio/`: Siri Voice 2 (Kaan) sesiyle sesli yönlendirmeler, her bölümün giriş metni (`ch1`–`ch20`) ve eksik listesinin cümle parçaları (`e_*`). Sayılar aynı sesle `nums/n0–n100` kayıtlarından okunur. `tools/make-audio.sh` ikisini birlikte üretir; Siri sesi adıyla seçilemediği için önce System Settings → Accessibility → Spoken Content → System Voice → Siri Voice 2 seçilir. Betik metinleri `game.js` içindeki `LINES` ve `CHAPTERS` ile aynı tutar; metin değişince yeniden çalıştır.
 - Kayıt: `localStorage` `kamp.v1` (mont rengi, bölüm yıldızları, ses).
 - Test kapısı: `window.__kamp` (bölüm başlatma, adım adım ilerletme, otomatik yürütme, iç durum).

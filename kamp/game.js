@@ -91,6 +91,7 @@ const LINES = {
   k3_secim: 'Odununu takasa mı harcarsın, iskeleye mi? Sen karar ver.',
   k_aksam: 'Akşam oluyor. Gece için her şey hazır mı?',
   k_dolu: 'Sırtın doldu. Önce bunları bırak.',
+  k_raf: 'Tabaklar dolu. Fazla balığı kilerin rafına koyabilirsin.',
   k_ipucu_ocak: 'Ocağa bak. Kar tanelerini say.',
   k_ipucu_kiler: 'Kilere bak. Kimin tabağı boş?',
   k_bolum: 'Harika! Bölümü bitirdin.',
@@ -175,7 +176,7 @@ const Snd = {
   },
   load(name) {
     if (!this.buf.has(name)) {
-      this.buf.set(name, fetch(/^n\d+$/.test(name) ? `../audio/${name}.mp3` : `audio/${name}.mp3`).then(r => r.arrayBuffer())
+      this.buf.set(name, fetch(/^n\d+$/.test(name) ? `nums/${name}.mp3` : `audio/${name}.mp3`).then(r => r.arrayBuffer())
         .then(b => new Promise((ok, no) => this.ctx.decodeAudioData(b, ok, no)))
         .catch(() => { this.buf.delete(name); return null; }));
     }
@@ -753,9 +754,9 @@ function setBridge(on, animate) { G.built.kopru = on; bridge.visible = on; bridg
 const ROCKS = [[-2.2, -24.9], [1.9, -25.3], [-.4, -27.5], [3.0, -27.2], [-3.2, -27.8], [.8, -29.3]].map(([x, z]) => {
   const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
   const r = mesh(mergeColored([[lump(.9, 1, .24), (px, py) => py > .68 ? col('#f3f7fc') : mix('#5d6570', '#959daa', (py + .9) / 1.8)]]), vcFlat, 0, .5, 0, g); r.scale.set(1, .85, 1);
-  return { g, x, z, hp: 5, alive: true, shake: 0 };
+  return { g, x, z, hp: 5, left: 2, alive: true, shake: 0 };
 });
-function resetRocks(on) { for (const k of ROCKS) { k.hp = 5; k.alive = true; k.g.visible = on; k.g.scale.setScalar(1); } }
+function resetRocks(on) { for (const k of ROCKS) { k.hp = 5; k.left = 2; k.alive = true; k.g.visible = on; k.g.scale.setScalar(1); } }
 const stonePile = [], stoneGeo = lump(.18, 1, .25);
 const makeStone = () => { const m = new THREE.Mesh(stoneGeo, mat('#959ca7')); m.castShadow = true; return m; };
 function updateStonePile() { for (const m of stonePile) scene.remove(m); stonePile.length = 0; for (let i = 0; i < Math.min(Z.taslik.have, 12); i++) { const m = makeStone(); m.position.set(3.55 + (i % 3) * .3, .16 + Math.floor(i / 3) * .24, -4.6 + (Math.floor(i / 3) % 2) * .12); scene.add(m); stonePile.push(m); } }
@@ -1335,9 +1336,10 @@ function needsMet(ignoreFire) {
 function sleepOK() {
   if (G.mode !== 'play') return false;
   if (!strict()) return needsMet();
-  return needsMet(true) && (!G.timed || G.dayLeft < dayLen() * .5);
+  return needsMet(true) && (!G.timed || sleepHalf());
 }
 const pileTop = () => new V3(PILE.x, .55, PILE.z);
+const sleepHalf = () => G.dayLeft < dayLen() * .5;
 function smokePuff() { burst(new V3(rand(-.2, .2), 1.1, -1), '#55504c', 9, 2.2); Snd.fx('drop'); }
 function updatePending() {
   for (const m of pendingFish) stall.remove(m); pendingFish.length = 0;
@@ -1363,11 +1365,14 @@ function updatePlates3() {
     P3.food.add(m);
   });
 }
+const FOOD = ['fish', 'big', 'smoked', 'bread'], LARDER_MAX = 8;
+const hasFood = () => FOOD.some(has);
+// Raf: rafta saklanan yemek iki sıra hâlinde asılı görünür.
 function updateRack() {
   updatePlates3();
   for (const m of rackFish) rack.remove(m); rackFish.length = 0;
-  let i = 0;
-  for (const s of G.plates) { if (s === 1 || s === 2 || s === 4 || s === 5) { const f = makeFish(s === 1 ? 'fish' : s === 5 ? 'smoked' : 'big'); f.position.set(0, 1.25, -.66 + i * .26); f.rotation.set(0, Math.PI / 2, Math.PI / 2); rack.add(f); rackFish.push(f); i++; } }
+  (G.larder || []).forEach((t, i) => { const f = makeItem(t), row = i >> 2, j = i & 3; f.position.set(0, 1.3 - row * .42, -.48 + j * .32);
+    if (t !== 'bread') f.rotation.set(0, Math.PI / 2, Math.PI / 2); rack.add(f); rackFish.push(f); });
 }
 
 /* ----- Baykuş ----- */
@@ -1379,6 +1384,7 @@ function say(key) {
 }
 function hint() {
   if (G.mode !== 'play') return;
+  if (room() <= 0 && hasFood() && Z.kiler.active && Z.kiler.have >= Z.kiler.need && G.larder.length < LARDER_MAX) return say('k_raf');
   const c = CC();
   if (Z.ocak.lighting) return say('k1_ocak');
   if (c.helper && !H.running) return say('k6_yardimci');
@@ -1874,7 +1880,7 @@ function startChapter(n) {
   const c = CC();
   G.coins = c.coins || 0; G.upg = {}; G.custT = 4;
   G.stock = c.stock ? Object.assign({}, c.stock) : { fish: 0, big: 0 };
-  G.plates = Array(c.people).fill(0);
+  G.plates = Array(c.people).fill(0); G.larder = [];
   resetTrees(); clearFlyers(); clearNpcs(); customers.length = 0; H.npc = null; stripKey = '';
   for (const st of steps) { st.t = 99; st.m.material.opacity = 0; }
   P.x = 0; P.z = 4.6; P.face = Math.PI; P.stack = []; P.incoming = 0; P.fishProg = 0; P.swing = 1; buildPlayer();
@@ -2168,8 +2174,12 @@ function hitRock(k) {
   k.hp--; k.shake = .25; Snd.fx('chop'); Snd.tone(220, .1, { type: 'square', gain: .05, to: 160 });
   burst(new V3(k.x, .8, k.z), '#9ea6b2', 5, 3);
   if (k.hp > 0) return;
-  k.alive = false; Snd.fx('fall'); const from = new V3(k.x, .8, k.z), n = Math.min(2, room());
+  // Sırta sığmayan taş kayada kalır: kaya küçülür, bir vuruşta kalan taşı verir. Hiç taş boşa gitmez.
+  const from = new V3(k.x, .8, k.z), n = Math.min(k.left, room());
   for (let i = 0; i < n; i++) giveToPlayer('stone', from, .2 + i * .14);
+  k.left -= n;
+  if (k.left <= 0) { k.alive = false; Snd.fx('fall'); }
+  else { k.hp = 1; k.g.scale.setScalar(.72); burst(new V3(k.x, .6, k.z), '#9ea6b2', 8, 3); }
 }
 function turnTo(tgt, dt, k) { let d = tgt - P.face; d = Math.atan2(Math.sin(d), Math.cos(d)); P.face += d * Math.min(1, dt * k); }
 function updatePlayer(dt) {
@@ -2252,7 +2262,16 @@ function updateZones(dt) {
       }
       continue;
     }
-    if (z.id === 'kiler') { if (feedPlate(z)) { z.timer = CFG.dropKiler; Snd.fx('drop'); } continue; }
+    if (z.id === 'kiler') {
+      if (!z.dir) z.dir = hasFood() ? 'in' : 'out';
+      if (z.dir === 'in') {
+        if (feedPlate(z)) { z.timer = CFG.dropKiler; Snd.fx('drop'); }
+        else if (z.have >= z.need && G.larder.length < LARDER_MAX) {
+          const t = FOOD.find(has); if (t) { const from = take(t); G.larder.push(t); fly(makeItem(t), from, () => new V3(-3.6, 1.2, -6.1), .38, updateRack, 1); z.timer = CFG.dropKiler; Snd.fx('drop'); }
+        }
+      } else if (G.larder.length && room() > 0) { const t = G.larder.pop(); updateRack(); giveToPlayer(t, new V3(-3.6, 1.2, -6.1)); z.timer = .3; }
+      continue;
+    }
     if (z.market) { if (serveCustomer(z)) z.timer = .3; continue; }
     if (z.coin) {
       if (z.have < z.need && G.coins > 0) {
@@ -2428,7 +2447,7 @@ let hudKey = '';
 function updateHud() {
   if (G.mode === 'menu') return;
   const w = count('wood'), pl = count('plank'), f = count('fish'), b = count('big'), met = needsMet(), c = CC(), dc = dayCfg();
-  const key = [w, pl, f, b, P.incoming, capNow(), Z.ocak.have >= Z.ocak.need && !Z.ocak.lighting, Z.ocak.have, sleepOK(), Z.kiler.active, Z.kiler.have >= Z.kiler.need, G.day, G.dayIdx, G.timed,
+  const key = [w, pl, f, b, P.incoming, capNow(), Z.ocak.have >= Z.ocak.need && !Z.ocak.lighting, Z.ocak.have, sleepOK(), sleepHalf(), Z.kiler.active, Z.kiler.have >= Z.kiler.need, G.day, G.dayIdx, G.timed,
     met && G.mode === 'play', dc.flakes, G.coins, !!H.npc, H.delivered, Z.depo.have, JSON.stringify(G.built), Z.taslik.have, LOST.rescued, SOBA.map(x => x.built).join(), Z.ambar.have, count('wheat'), count('bread'), count('smoked'), count('stone')].join();
   if (key !== hudKey) {
     hudKey = key;
@@ -2459,7 +2478,7 @@ function updateHud() {
     if (c.stoneGoal) nd.append(need('stone', Z.taslik.have >= c.stoneGoal, `${Math.min(Z.taslik.have, c.stoneGoal)}/${c.stoneGoal}`));
     if (c.wheatGoal) nd.append(need('wheat', Z.ambar.have >= c.wheatGoal, `${Math.min(Z.ambar.have, c.wheatGoal)}/${c.wheatGoal}`));
     for (const id of Object.keys(c.builds || {})) nd.append(need(id === 'kule' ? 'tower' : id === 'sofra' ? 'feast' : 'house', !!G.built[id]));
-    $('sunbar').hidden = !G.timed; $('dayLbl').textContent = G.timed ? `Gün ${G.day}` : '';
+    $('sunbar').hidden = !G.timed; $('sunMoon').hidden = !(strict() && G.timed) || sleepHalf(); $('dayLbl').textContent = G.timed ? `Gün ${G.day}` : '';
     const wx = $('wx'); wx.innerHTML = ''; wx.append(el('span', '', 'Bu gece'));
     for (let i = 0; i < dc.flakes; i++) { const im = el('img'); im.src = ICON.flake; wx.append(im); }
     if (c.days && G.dayIdx < c.days.length - 1) {
@@ -2490,7 +2509,7 @@ function frame(now) {
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { Snd.stopVoice(); if (G.mode === 'play') pauseMenu(); } });
 
-$('owlImg').src = ICON.owl; $('moonImg').src = ICON.moon; $('nightMoon').src = ICON.moon;
+$('owlImg').src = ICON.owl; $('moonImg').src = ICON.moon; $('sunMoon').src = ICON.moon; $('nightMoon').src = ICON.moon;
 $('owlBtn').onclick = () => { Snd.unlock(); hint(); };
 $('bubble').onclick = () => { Snd.unlock(); Snd.replay(); bubbleT = 6; };
 $('sleepBtn').onclick = () => { Snd.fx('tap'); if (sleepOK()) startNight(); };
@@ -2512,6 +2531,6 @@ window.__kamp = {
   get pier() { return pierBuilt; }, get fire() { return fireOn; },
   info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, trees: T.n, geo: renderer.info.memory.geometries, tex: renderer.info.memory.textures }),
   lastVoice: () => Snd.last,
-  PILE, PLATES3, CAM_P, resize, strict, sleepOK, wasteNow, get fireLvl() { return fireLvl; },
+  PILE, PLATES3, CAM_P, resize, strict, get larder() { return G.larder; }, sleepOK, wasteNow, get fireLvl() { return fireLvl; },
 };
 })();

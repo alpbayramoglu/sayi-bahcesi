@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
-# Kar Kampı'nın sesli yönlendirmelerini macOS'taki Yelda sesiyle üretir → kamp/audio/<ad>.mp3
-# Metinler kamp/game.js içindeki LINES ve CHAPTERS (ch1–ch20) ile aynı olmalı. Sayılar ../audio/n0–n100 (Sayı Bahçesi).
-# Kullanım: ./kamp/tools/make-audio.sh   (macOS, `say` ve `ffmpeg` gerekir)
+# Kar Kampı'nın sesli yönlendirmelerini ve sayılarını macOS sesiyle üretir → audio/<ad>.mp3, nums/n0–n100.mp3
+# Metinler game.js içindeki LINES ve CHAPTERS (ch1–ch20) ile aynı olmalı.
+# Ses: Siri Voice 2 (Kaan). Siri sesleri `say -v` ile adıyla seçilemez; bu yüzden VOICE boşken sistem sesi kullanılır.
+# Önce System Settings → Accessibility → Spoken Content → System Voice → Siri Voice 2 seç, üretim bitene kadar değiştirme.
+# Kullanım: ./tools/make-audio.sh   (macOS, `say` ve `ffmpeg` gerekir)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VOICE="Yelda"
-RATE=168
+VOICE=""      # boş: sistem sesi (Siri Voice 2). Adıyla seçilebilen bir ses için örn. "Yelda (Enhanced)"
+RATE=""       # boş: sesin kendi hızı
 OUT="audio"
-mkdir -p "$OUT"
-rm -f "$OUT"/*.mp3
+NUMS="nums"
+mkdir -p "$OUT" "$NUMS"
+rm -f "$OUT"/*.mp3 "$NUMS"/*.mp3
 
 CLIPS=(
   "k1_ocak|Ocak sönmüş. Ormandan odun getir, ocağı yakalım."
@@ -110,6 +113,7 @@ CLIPS=(
   "e_yemek_bosa|tabaklık yemek boşa gitti."
   "c_tekrar2|Hepsini iki kez yap."
   "c_tekrar3|Hepsini üç kez yap."
+  "k_raf|Tabaklar dolu. Fazla balığı kilerin rafına koyabilirsin."
   "ch1|Bölüm 1. Varış. Kış erken geldi. Vadinin ortasındaki eski kampın ocağı yıllardır sönük. Ocağı yak, sonra geceye hazırlan: gökyüzündeki her kar tanesi için ocakta iki odun olmalı."
   "ch2|Bölüm 2. İlk Komşu. Yolda kalan dört kişilik bir aile kampa sığındı. Herkesin tabağına balık lazım. Büyük balık iki tabağı doldurur, küçük balık bir tabağı. Tüccarın büyük balığı az, iyi düşün. Acele yok, hazır olunca uyursun."
   "ch3|Bölüm 3. Buz Gölü. Bir misafir daha geldi ve bu gece daha soğuk. Gölde balık var ama önce iskele kurmak gerek. Odununu takasa mı harcarsın, iskeleye mi? Balığı kendin tutmak zaman alır. Karar senin."
@@ -136,9 +140,17 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 TRIM="silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse"
 
-for c in "${CLIPS[@]}"; do
-  name="${c%%|*}"; text="${c#*|}"
-  say -v "$VOICE" -r "$RATE" -o "$tmp/$name.aiff" "$text"
-  ffmpeg -loglevel error -y -i "$tmp/$name.aiff" -af "$TRIM" -ac 1 -ar 22050 -codec:a libmp3lame -b:a 48k "$OUT/$name.mp3"
-done
-echo "${#CLIPS[@]} parça üretildi → kamp/$OUT/"
+ARGS=()
+[ -n "$VOICE" ] && ARGS+=(-v "$VOICE")
+[ -n "$RATE" ] && ARGS+=(-r "$RATE")
+
+clip() {   # clip <metin> <çıktı.mp3>
+  say ${ARGS[@]+"${ARGS[@]}"} -o "$tmp/clip.aiff" "$1"
+  ffmpeg -loglevel error -y -i "$tmp/clip.aiff" -af "$TRIM" -ac 1 -ar 22050 -codec:a libmp3lame -b:a 48k "$2"
+  # Siri sesi bazen boş dosya yazar; öyle olursa dur
+  [ "$(stat -f %z "$2")" -gt 1500 ] || { echo "boş ses: $2" >&2; exit 1; }
+}
+
+for c in "${CLIPS[@]}"; do clip "${c#*|}" "$OUT/${c%%|*}.mp3"; done
+for i in $(seq 0 100); do clip "$i" "$NUMS/n$i.mp3"; done
+echo "${#CLIPS[@]} parça → $OUT/, 101 sayı → $NUMS/"
